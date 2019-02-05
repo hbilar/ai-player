@@ -9,6 +9,7 @@ import sys
 import socket
 import numpy as np
 import struct
+import select
 
 
 NES_WIDTH = 256
@@ -35,12 +36,26 @@ def connect_to_game_server(address, port):
     """
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     sock.connect((address, port))
 
 #    sock.setblocking(False)
-
     return sock
+
+
+def clear_socket(sock):
+    """ Read from socket until there's nothing else to read (i.e. drain it) """
+
+    while True:
+        (readable, writable, exceptions) = select.select([sock], [], [], 0)
+        if len(readable) > 0:
+            # there is data to be read
+            data = sock.recv(4096)
+            if len(data) <= 0:
+                # actually, no there wasn't...
+                break
+        else:
+            # no data to read (a read would block)
+            break
 
 
 def send_to_socket(sock, message):
@@ -61,10 +76,12 @@ def get_nes_screen_binary(sock):
     """
 
     # send command
+    clear_socket(sock)
     send_to_socket(sock, "binscreen\n")
 
     recvd_bytes = 0
     pixels = bytearray()
+    # FIXME: Make this non-blocking (using the same select as in the clear_socket
     while (recvd_bytes < NES_HEIGHT*NES_WIDTH*3):
         # keep looping until full message is received
         data = sock.recv(4096)
@@ -145,6 +162,39 @@ def get_nes_screen(sock):
     return screen
 
 
+def send_key_to_emulator(sock, key_state):
+    # type: (socket, dict) -> None
+    """ Send a new joypad state to the emulator """
+
+    clear_socket(sock)
+    send_to_socket(sock, "j {}\n".format(key_state))
+
+
+def send_reset_to_emulator(sock):
+    # type: (socket) -> None
+    """ Send a reset to the emulator """
+
+    clear_socket(sock)
+    send_to_socket(sock, "reset\n")
+
+
+def calculate_key_value(key_states):
+    # type: (dict) -> int
+    """ From the key_states dict, calculate what the status
+        byte to send the emulator should be. """
+
+    j = 1 if key_states['a'] else 0
+    j = j | (2 if key_states['b'] else 0)
+    j = j | (4 if key_states['select'] else 0)
+    j = j | (8 if key_states['start'] else 0)
+    j = j | (16 if key_states['up'] else 0)
+    j = j | (32 if key_states['down'] else 0)
+    j = j | (64 if key_states['left'] else 0)
+    j = j | (128 if key_states['right'] else 0)
+
+    return j
+
+
 def main_loop(screen, sock):
     """ Main game loop """
 
@@ -156,6 +206,18 @@ def main_loop(screen, sock):
 #    clock = pygame.time.Clock()
     running = True
 
+
+    # The possible joypad states
+    key_states = { 'up': False,
+                   'down': False,
+                   'left': False,
+                   'right': False,
+                   'a': False,
+                   'b': False,
+                   'start': False,
+                   'select': False }
+    key_state = 0
+
     while running:
         nes_screen_contents = get_nes_screen_binary(sock)
         draw_nes_screen(nes_surface, nes_screen_contents)
@@ -164,15 +226,36 @@ def main_loop(screen, sock):
             if event.type == pygame.QUIT:
                 running = False
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_u:
-                draw_counter = draw_counter + 1
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
-                draw_counter = draw_counter - 1
+            # joypad buttons
+            if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP:
+                    key_states['up'] = event.type == pygame.KEYDOWN
+                elif event.key == pygame.K_DOWN:
+                    key_states['down'] = event.type == pygame.KEYDOWN
+                if event.key == pygame.K_LEFT:
+                    key_states['left'] = event.type == pygame.KEYDOWN
+                if event.key == pygame.K_RIGHT:
+                    key_states['right'] = event.type == pygame.KEYDOWN
+                if event.key == pygame.K_a:
+                    key_states['a'] = event.type == pygame.KEYDOWN
+                if event.key == pygame.K_s:   # NOTE   s, not b
+                    key_states['b'] = event.type == pygame.KEYDOWN
+                if event.key == pygame.K_RETURN:
+                    key_states['start'] = event.type == pygame.KEYDOWN
+                if event.key == pygame.K_SPACE:
+                    key_states['select'] = event.type == pygame.KEYDOWN
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
-                get_counter = get_counter + 1
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
-                get_counter = get_counter - 1
+            # reset NES
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                send_reset_to_emulator(sock)
+
+        # calculate the key state value. If it's different to the previous
+        # value, update the emulator
+        tmp_key_state = calculate_key_value(key_states)
+        if tmp_key_state != key_state:
+            # update the emulator
+            key_state = tmp_key_state
+            send_key_to_emulator(sock, key_state)
 
         # draw the nes surface onto the actual screen
         screen.blit(nes_surface, (200, 20))
