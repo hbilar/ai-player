@@ -10,12 +10,18 @@ import socket
 import numpy as np
 import struct
 import select
+import stat
+import os
+import datetime
 
 
 NES_WIDTH = 256
 NES_HEIGHT = 240
 
 screen_size = [500, 500]
+
+
+screenshot_dir = "./screenshots"
 
 
 def setup_screen():
@@ -195,6 +201,36 @@ def calculate_key_value(key_states):
     return j
 
 
+def take_screenshot(surface, path=screenshot_dir):
+    # type: (surface, str) -> None
+    """ Save the surface as a screen shot"""
+
+    # create directory if it doesn't exist
+    try:
+        stat_info = os.stat(path)
+    except OSError:
+        # failed to stat - path probably does not exist
+
+        try:
+            os.mkdir(path)
+        except:
+            # raise all exceptions here...
+            raise
+
+    time_now = datetime.datetime.now()
+
+
+    screenshot_name = "screenshot-{:04d}-{:02d}-{:02d}-{:02d}{:02d}{:02d}.jpg".format(time_now.year, time_now.month,
+                                                              time_now.day, time_now.hour,
+                                                              time_now.minute, time_now.second)
+
+
+    print("Screenshot name = {}".format(screenshot_name))
+    pygame.image.save(surface, "{}/{}".format(path, screenshot_name))
+
+
+
+
 def main_loop(screen, sock):
     """ Main game loop """
 
@@ -242,12 +278,15 @@ def main_loop(screen, sock):
                     key_states['b'] = event.type == pygame.KEYDOWN
                 if event.key == pygame.K_RETURN:
                     key_states['start'] = event.type == pygame.KEYDOWN
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_q:   # Use q for select (because space for screen shot)
                     key_states['select'] = event.type == pygame.KEYDOWN
 
-            # reset NES
+            # Reset NES
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 send_reset_to_emulator(sock)
+            # Take screen shot
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                take_screenshot(nes_surface, path=screenshot_dir)
 
         # calculate the key state value. If it's different to the previous
         # value, update the emulator
