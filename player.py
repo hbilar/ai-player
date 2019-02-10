@@ -184,6 +184,14 @@ def send_reset_to_emulator(sock):
     send_to_socket(sock, "reset\n")
 
 
+def send_poweroff_to_emulator(sock):
+    # type: (socket) -> None
+    """ Send a poweroff to the emulator """
+
+    clear_socket(sock)
+    send_to_socket(sock, "poweroff\n")
+
+
 def calculate_key_value(key_states):
     # type: (dict) -> int
     """ From the key_states dict, calculate what the status
@@ -219,16 +227,12 @@ def take_screenshot(surface, path=screenshot_dir):
 
     time_now = datetime.datetime.now()
 
-
     screenshot_name = "screenshot-{:04d}-{:02d}-{:02d}-{:02d}{:02d}{:02d}.jpg".format(time_now.year, time_now.month,
                                                               time_now.day, time_now.hour,
                                                               time_now.minute, time_now.second)
 
-
     print("Screenshot name = {}".format(screenshot_name))
     pygame.image.save(surface, "{}/{}".format(path, screenshot_name))
-
-
 
 
 def main_loop(screen, sock):
@@ -260,6 +264,7 @@ def main_loop(screen, sock):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                send_poweroff_to_emulator(sock)
                 running = False
 
             # joypad buttons
@@ -284,9 +289,14 @@ def main_loop(screen, sock):
             # Reset NES
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 send_reset_to_emulator(sock)
-            # Take screen shot
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                # Take screen shot
                 take_screenshot(nes_surface, path=screenshot_dir)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+                # kill remote emulator and ourselves
+                send_poweroff_to_emulator(sock)
+                running = False
+
 
         # calculate the key state value. If it's different to the previous
         # value, update the emulator
