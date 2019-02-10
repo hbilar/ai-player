@@ -18,8 +18,7 @@ import datetime
 NES_WIDTH = 256
 NES_HEIGHT = 240
 
-screen_size = [500, 500]
-
+screen_size = [3 * NES_WIDTH, 3 * NES_HEIGHT ]
 
 screenshot_dir = "./screenshots"
 
@@ -307,7 +306,7 @@ def main_loop(screen, sock):
             send_key_to_emulator(sock, key_state)
 
         # draw the nes surface onto the actual screen
-        screen.blit(nes_surface, (200, 20))
+        screen.blit(pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT)), (0, 0))
         pygame.display.flip()
 
 
