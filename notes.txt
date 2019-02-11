@@ -1,0 +1,17 @@
+
+
+2019-02-10:
+
+Over the last couple of days, collected images from Mario, and trained tensorflow on the different images.
+The model comes out highly accurate, but each image takes about 5500ms to classify - ouch!
+
+Will try to use mobilenet for tensorflow instead, to see if we can trade some accuracy for a lot of speed.
+
+
+
+2019-02-11:
+
+With mobilenet trained on a 128x128px image, with 25 neurons per hidden layer, image labelling takes about 140ms.
+The neural net is about 1.0Mb in size, compared to 83Mb for the default imageNet
+
+With 224x224px and 100 neurons, classification takes about 560ms, and the graph ends up at 13Mb.
