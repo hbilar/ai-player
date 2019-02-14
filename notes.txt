@@ -15,3 +15,17 @@ With mobilenet trained on a 128x128px image, with 25 neurons per hidden layer, i
 The neural net is about 1.0Mb in size, compared to 83Mb for the default imageNet
 
 With 224x224px and 100 neurons, classification takes about 560ms, and the graph ends up at 13Mb.
+
+
+2019-02-12:
+
+Sprite list downloaded from http://www.mariomayhem.com/downloads/sprites/super_mario_bros_sprites.php
+
+Started writing create_training_data.py, which will use the screenshots I've saved from the level and insert random enemies into them, and save the image + the label data for the image (to use as a training set).
+
+Generated a sample xml using https://github.com/tzutalin/labelImg, to use as a template for the training generation program.
+
+
+2019-02-14:
+
+Further work on create_training_image. Now generating the screenshots and XML files successfully.
