@@ -23,10 +23,17 @@ def get_bg_surface(background_cols):
     bg_surface.convert()
 
     # set background image as defined in the background-cols parameter
-    (r,g,b) = background_cols.split(',')
-    r = int(r)
-    g = int(g)
-    b = int(b)
+    colours = background_cols.split(',')
+
+    if colours[0] == "None":
+        # generate random numbers
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+    else:
+        r = int(colours[0])
+        g = int(colours[1])
+        b = int(colours[2])
     bg_surface.fill((r, g, b))
 
     return bg_surface
@@ -145,23 +152,22 @@ def generate_screenshot(screen, bg_surface, background_img, object_img, obj_x=No
     print("path = {}".format(path))
     pygame.image.save(screen, "{}".format(screenshot_name))
 
-
     # add the xml label file
     generate_label_file(screenshot_name, label, object_img, obj_x, obj_y)
-
-    time.sleep(1)
 
 
 @click.command()
 @click.argument('object')
 @click.option('--background-img', help="Background image to use")
-@click.option('--background-cols', help="Comma separated list of r,g,b (Example: 0,0,128)", default="0,0,0")
+@click.option('--background-cols', help="Comma separated list of r,g,b (Example: 0,0,128). "
+              "If None, a random colour is generated", default="None")
 @click.option('--object-loc', help="x,y coordinates of where to place object (Example: 50,80)")
 @click.option('--many', help="How many images to generate", default=1)
 @click.option('--outdir', help="Where to store the training data", default="training")
 @click.option('--label', help="Label for the images", default="None")
+@click.option('--sleeptime', help="delay between each image generation", default=None)
 def handle_cmdline(object, background_img, background_cols, object_loc, many, outdir,
-                   label):
+                   label, sleeptime):
     """ A little utility program that lets you generate training data for the ai-player
         object detection.
 
@@ -175,22 +181,27 @@ def handle_cmdline(object, background_img, background_cols, object_loc, many, ou
     pygame.init()
     screen = pygame.display.set_mode((NES_WIDTH, NES_HEIGHT))
 
-    # background surface
-    bg_surface = get_bg_surface(background_cols)
-
     # load image if defined
     (bg_img, _) = get_image(background_img)
 
     # load the object image
+    print("Loading image")
     (object_img, img_size) = get_image(object)
 
     for i in range(0, many):
+        # background surface - sits in here because we sometimes have random
+        # background colours
+        bg_surface = get_bg_surface(background_cols)
+
         print("Generating image {}".format(i))
         # find out where to place the object
         (obj_x, obj_y) = get_xy(object_loc, img_size)
 
         generate_screenshot(screen, bg_surface, bg_img, object_img, obj_x, obj_y, outdir,
                             label)
+
+        if sleeptime is not None:
+            time.sleep(float(sleeptime))
 
 
 if __name__ == "__main__":
