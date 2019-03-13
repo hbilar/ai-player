@@ -29,3 +29,71 @@ Generated a sample xml using https://github.com/tzutalin/labelImg, to use as a t
 2019-02-14:
 
 Further work on create_training_image. Now generating the screenshots and XML files successfully.
+
+
+2019-02-15: 
+
+Followed https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/running_pets.md to train something in tensorflow
+
+https://github.com/tensorflow/models/tree/master/research/object_detection
+
+2019-03-03:
+
+:~/Documents/uni/project/ai-player/training/split-training-set/train$ python3 ../generate_tfrecord.py --csv_input=mario-small_labels.csv --output_path=mario-small.record
+
+2019-03-04:
+
+(for both test and train):
+~/Documents/uni/project/ai-player/training/split-training-set/test$ python3 ../generate_tfrecord.py  --csv_input=all.csv --output_path=test.record
+
+
+
+
+Downloaded and untarred ssd_mobilenet to ~/Documents/uni/project/models/research/object_detection/ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03.
+
+Set up file: 
+~/Documents/uni/project/models/research/object_detection/ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03/pipeline.config
+
+
+~/Documents/uni/project/models/research/object_detection$ python3 ./model_main.py --model_dir /Users/Henrik/Documents/uni/project/models/research/object_detection/ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03/ --pipeline_config_path /Users/Henrik//Documents/uni/project/models/research/object_detection/ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03/pipeline.config
+
+
+Henrik@MacBook-Pro:~/Documents/uni/project/models/research$ python3 object_detection/model_main.py --model_dir /Users/Henrik/Documents/uni/project/models/research/object_detection/my_model --pipeline_config_path /Users/Henrik//Documents/uni/project/models/research/object_detection/ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03/pipeline.config  --alsologtostderr
+
+Henrik@MacBook-Pro:~/Documents/uni/project$ tensorboard --logdir=/Users/Henrik/Documents/uni/project/models/research/object_detection/my_model
+
+
+2019-03-07:
+
+Generate frozen inference graph:
+
+Henrik@MacBook-Pro:~/Documents/uni/project/models/research$ python3 object_detection/export_inference_graph.py  --pipeline_config_path /Users/Henrik//Documents/uni/project/models/research/object_detection/ssdlite_mobilenet_v2_coco_2018_05_09/pipeline.config --trained_checkpoint_prefix /Users/Henrik/Documents/uni/project/models/research/object_detection/ssdlite_mobilenet_v2_coco_2018_05_09/model.ckpt  --output_directory /Users/Henrik/Documents/uni/project/ai-player/frozen_detection_models/model_1
+
+
+
+2019-03-08:
+
+created new dataset (models/research/data) with different file structure    (/data/{test,train,test_labels.csv,train_labels.csv})
+modified xml_to_csv.py to generate train and test labels (with correct path)
+
+~/Documents/uni/project/models/research/data$ python3 generate_tfrecord.py --csv_input=train_labels.csv --output_path=train.tfrecord
+~/Documents/uni/project/models/research/data$ python3 generate_tfrecord.py --csv_input=test_labels.csv --output_path=test.tfrecord
+
+extract ssdlite_mobilenet_v2_coco_2018_05_09 to /Users/Henrik/Documents/uni/project/models/research/object_detection/ssdlite_mobilenet_v2_coco_2018_05_09
+
+copy pipeline config to ~/Documents/uni/project/models/research/data
+
+Do training:
+~/Documents/uni/project/models/research$ python3 object_detection/model_main.py --alsologtostderr --pipeline_config_path=data/pipeline.config --model_dir=data/mario-model
+
+
+Start tensorboard:
+~/Documents/uni/project/models/research/data$ tensorboard --logdir=.
+
+
+2019-03-10:
+
+Loss still decreasing, but in the test set it looks "good enough" for now.
+Export inference graph: 
+
+Henrik@MacBook-Pro:~/Documents/uni/project/models/research$ python3 object_detection/export_inference_graph.py   --pipeline_config_path data/pipeline.config  --output_directory mario-model-frozen-2019-03-10  --trained_checkpoint_prefix data/mario-model/model.ckpt-7726
