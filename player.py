@@ -258,7 +258,7 @@ def load_tensorflow_graph(path):
 
 
 
-def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict):
+def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_session):
     # type: (pygame.Surface, tf.Graph) -> list
     """ Detect objects in the pygame surface.
         This function used a function from object_detection_tutorial
@@ -270,8 +270,7 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict):
     # get the pygame surface as a 3d (r,g,b) array
     image = pygame.surfarray.array3d(surface)
 
-    output_dict = tf.Session().run(tensor_dict,
-                                feed_dict={image_tensor: np.expand_dims(image, 0)})
+    output_dict = tf_session.run(tensor_dict, feed_dict={image_tensor: np.expand_dims(image, 0)})
 
     # all outputs are float32 numpy arrays, so convert types as appropriate
     output_dict['num_detections'] = int(output_dict['num_detections'][0])
@@ -282,8 +281,8 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict):
     if 'detection_masks' in output_dict:
         output_dict['detection_masks'] = output_dict['detection_masks'][0]
 
-    print("")
-    print("Num detections: {}".format(output_dict['num_detections']))
+#    print("")
+#    print("Num detections: {}".format(output_dict['num_detections']))
     for i in range(0, output_dict['num_detections']):
         obj_id = int(output_dict['detection_classes'][i])
         y = int(output_dict['detection_boxes'][i][0] * NES_HEIGHT)
@@ -293,7 +292,7 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict):
 
         score = output_dict['detection_scores'][i]
 
-        print("ID: {},  SCORE: {},  BOX:  {} x {}  to  {} x {}".format(obj_id, score, x, y, x2, y2))
+#        print("ID: {},  SCORE: {},  BOX:  {} x {}  to  {} x {}".format(obj_id, score, x, y, x2, y2))
 
         return_list.append([y, x, y2, x2, obj_id, score])
 
@@ -303,37 +302,36 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict):
 
 def setup_tf_detection_vars(graph):
     with graph.as_default():
-        with tf.Session() as sess:
-            # Get handles to input and output tensors
-            ops = tf.get_default_graph().get_operations()
-            all_tensor_names = {output.name for op in ops for output in op.outputs}
-            tensor_dict = {}
-            for key in [
-                'num_detections', 'detection_boxes', 'detection_scores',
-                'detection_classes', 'detection_masks'
-            ]:
-                tensor_name = key + ':0'
-                if tensor_name in all_tensor_names:
-                    tensor_dict[key] = tf.get_default_graph().get_tensor_by_name(
-                        tensor_name)
-            if 'detection_masks' in tensor_dict:
-                # The following processing is only for single image
-                detection_boxes = tf.squeeze(tensor_dict['detection_boxes'], [0])
-                detection_masks = tf.squeeze(tensor_dict['detection_masks'], [0])
-                # Reframe is required to translate mask from box coordinates to image coordinates and fit the image size.
-                real_num_detection = tf.cast(tensor_dict['num_detections'][0], tf.int32)
-                detection_boxes = tf.slice(detection_boxes, [0, 0], [real_num_detection, -1])
-                detection_masks = tf.slice(detection_masks, [0, 0, 0], [real_num_detection, -1, -1])
-                detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
-                    detection_masks, detection_boxes, image.shape[0], image.shape[1])
-                detection_masks_reframed = tf.cast(
-                    tf.greater(detection_masks_reframed, 0.5), tf.uint8)
-                # Follow the convention by adding back the batch dimension
-                tensor_dict['detection_masks'] = tf.expand_dims(
-                    detection_masks_reframed, 0)
-            image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
+        # Get handles to input and output tensors
+        ops = tf.get_default_graph().get_operations()
+        all_tensor_names = {output.name for op in ops for output in op.outputs}
+        tensor_dict = {}
+        for key in [
+            'num_detections', 'detection_boxes', 'detection_scores',
+            'detection_classes', 'detection_masks'
+        ]:
+            tensor_name = key + ':0'
+            if tensor_name in all_tensor_names:
+                tensor_dict[key] = tf.get_default_graph().get_tensor_by_name(
+                    tensor_name)
+        if 'detection_masks' in tensor_dict:
+            # The following processing is only for single image
+            detection_boxes = tf.squeeze(tensor_dict['detection_boxes'], [0])
+            detection_masks = tf.squeeze(tensor_dict['detection_masks'], [0])
+            # Reframe is required to translate mask from box coordinates to image coordinates and fit the image size.
+            real_num_detection = tf.cast(tensor_dict['num_detections'][0], tf.int32)
+            detection_boxes = tf.slice(detection_boxes, [0, 0], [real_num_detection, -1])
+            detection_masks = tf.slice(detection_masks, [0, 0, 0], [real_num_detection, -1, -1])
+            detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
+                detection_masks, detection_boxes, image.shape[0], image.shape[1])
+            detection_masks_reframed = tf.cast(
+                tf.greater(detection_masks_reframed, 0.5), tf.uint8)
+            # Follow the convention by adding back the batch dimension
+            tensor_dict['detection_masks'] = tf.expand_dims(
+                detection_masks_reframed, 0)
+        image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
 
-            return (image_tensor, tensor_dict)
+        return (image_tensor, tensor_dict)
 
 
 def main_loop(screen, sock):
@@ -349,6 +347,8 @@ def main_loop(screen, sock):
     object_detection_graph = load_tensorflow_graph(tensorflow_frozen_graph)
     print("object_detection_graph = {}".format(object_detection_graph))
 
+    # Cerate a tf.Session object, so that we don't have to recreate it every time we
+    # run inference
     (image_tensor, tensor_dict) = setup_tf_detection_vars(object_detection_graph)
 
     clock = pygame.time.Clock()
@@ -368,6 +368,7 @@ def main_loop(screen, sock):
 
 
     with object_detection_graph.as_default():
+        tf_session = tf.Session()
         while running:
             nes_screen_contents = get_nes_screen_binary(sock)
             draw_nes_screen(nes_surface, nes_screen_contents)
@@ -421,7 +422,7 @@ def main_loop(screen, sock):
 
             # try to detect objects in nes_surface
             obj_boxes = detect_objects_in_surface(nes_surface, object_detection_graph, image_tensor,
-                                                  tensor_dict)
+                                                  tensor_dict, tf_session)
             for b in obj_boxes:
 
                 colour = (0, 255, 0)
@@ -432,7 +433,7 @@ def main_loop(screen, sock):
             screen.blit(nes_surface, (0, 0))
             pygame.display.flip()
 
-            pygame.time.Clock().tick(5)
+#            pygame.time.Clock().tick(5)
 
 
 
