@@ -23,7 +23,10 @@ screen_size = [3 * NES_WIDTH, 3 * NES_HEIGHT ]
 
 screenshot_dir = "./screenshots"
 
-tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-03-10/frozen_inference_graph.pb"
+#tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-03-10/frozen_inference_graph.pb"
+tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-07-04/frozen_inference_graph.pb"
+#tensorflow_frozen_graph = "tensorflow/mario-model-rcnn-2019-07-08/frozen_inference_graph.pb"
+##tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_inference_graph.pb"
 
 
 def setup_screen():
@@ -34,6 +37,8 @@ def setup_screen():
 def draw_nes_screen(screen, nes_screen):
     """ Draw the nes screen buffer to the screen """
     pygame.surfarray.blit_array(screen, nes_screen)
+
+#    pygame.transform.scale2x(screen)
 
 
 def connect_to_game_server(address, port):
@@ -101,12 +106,19 @@ def get_nes_screen_binary(sock):
     # extra data back (I blame the \n characters..), so we make sure that
     # the array is the right size as well (otherwise reshape etc fails)
     pixels_np = np.array(pixels, dtype=np.uint8)
-    pixels_np = pixels_np[ : NES_WIDTH * NES_HEIGHT * 3]
+    ## HENRIK maybe unneccessary
+    ###pixels_np = pixels_np[ : NES_WIDTH * NES_HEIGHT * 3]
 
     # Our array needs to be reshaped and then transposed, because otherwise
     # we end up with each line offset (256-240) pixels, and also drawn 90 degrees
     # rotated anti clock wise :(
-    screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1)).transpose((1,0,2))
+    ###screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1)).transpose((1,0,2))
+
+    ## HENRIK
+
+    screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1)).transpose((1, 0, 2))
+    screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1))
+    print("PIXELS: {}, screen = {}".format(pixels_np.shape, screen.shape))
 
     return screen
 
@@ -267,8 +279,12 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_sess
 
     return_list = []
 
+
+    ### TRY RESIZING TO 300 PIXELS
     # get the pygame surface as a 3d (r,g,b) array
-    image = pygame.surfarray.array3d(surface)
+    new_surf = pygame.transform.scale(surface, (256*3, 240*3))
+    image = pygame.surfarray.array3d(new_surf)
+#    image = pygame.surfarray.array3d(surface)
 
     output_dict = tf_session.run(tensor_dict, feed_dict={image_tensor: np.expand_dims(image, 0)})
 
@@ -281,8 +297,8 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_sess
     if 'detection_masks' in output_dict:
         output_dict['detection_masks'] = output_dict['detection_masks'][0]
 
-#    print("")
-#    print("Num detections: {}".format(output_dict['num_detections']))
+    #print("")
+    #print("Num detections: {}".format(output_dict['num_detections']))
     for i in range(0, output_dict['num_detections']):
         obj_id = int(output_dict['detection_classes'][i])
         y = int(output_dict['detection_boxes'][i][0] * NES_HEIGHT)
@@ -292,7 +308,7 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_sess
 
         score = output_dict['detection_scores'][i]
 
-#        print("ID: {},  SCORE: {},  BOX:  {} x {}  to  {} x {}".format(obj_id, score, x, y, x2, y2))
+        print("ID: {},  SCORE: {},  BOX:  {} x {}  to  {} x {}".format(obj_id, score, x, y, x2, y2))
 
         return_list.append([y, x, y2, x2, obj_id, score])
 
@@ -338,9 +354,19 @@ def main_loop(screen, sock):
     """ Main game loop """
 
     # create a surface for the NES
-    nes_surface = pygame.Surface((NES_WIDTH, NES_HEIGHT))
+    ## HENRIK
+    ###nes_surface = pygame.Surface((NES_WIDTH, NES_HEIGHT))
+    nes_surface = pygame.Surface((NES_HEIGHT, NES_WIDTH))
     nes_surface.convert()
     nes_surface.fill((0, 0, 128))
+
+    ##nes_surface = pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT))
+
+    ## HENRIK
+    #nes_surface = pygame.transform.scale(nes_surface, (NES_WIDTH,  NES_HEIGHT))
+
+
+
 
 
     # Load a frozen tensorflow graph
@@ -371,7 +397,11 @@ def main_loop(screen, sock):
         tf_session = tf.Session()
         while running:
             nes_screen_contents = get_nes_screen_binary(sock)
+
+
             draw_nes_screen(nes_surface, nes_screen_contents)
+            # draw the nes surface onto the actual screen
+            ###new_surf = pygame.transform.scale(nes_surface, (256*3, 240*3))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -420,6 +450,9 @@ def main_loop(screen, sock):
             # draw the nes surface onto the actual screen
             #screen.blit(pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT)), (0, 0))
 
+
+#            nes_surface = pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT))
+
             # try to detect objects in nes_surface
             obj_boxes = detect_objects_in_surface(nes_surface, object_detection_graph, image_tensor,
                                                   tensor_dict, tf_session)
@@ -430,10 +463,12 @@ def main_loop(screen, sock):
                     colour = (255, 0, 0)
                 pygame.draw.rect(nes_surface, colour, (b[0], b[1], b[2]-b[0], b[3]-b[1]), 3)
 
+            ###nes_surface = pygame.transform.scale2x(nes_surface)
             screen.blit(nes_surface, (0, 0))
-            pygame.display.flip()
 
-#            pygame.time.Clock().tick(5)
+#            screen.blit(pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT)), (0, 0))
+
+            pygame.display.flip()
 
 
 
