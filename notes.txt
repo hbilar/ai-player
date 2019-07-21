@@ -97,3 +97,67 @@ Loss still decreasing, but in the test set it looks "good enough" for now.
 Export inference graph: 
 
 Henrik@MacBook-Pro:~/Documents/uni/project/models/research$ python3 object_detection/export_inference_graph.py   --pipeline_config_path data/pipeline.config  --output_directory mario-model-frozen-2019-03-10  --trained_checkpoint_prefix data/mario-model/model.ckpt-7726
+
+
+
+2019-06-30:
+
+Created a new training set with more object types.
+New script to split image set up into training + test set (split-training-test-data.sh)
+
+Generated new training set in ~/files/project/models/research/data (with split-training-test-data.sh)
+
+Ran xml_to_csv.py to generate csv files:
+
+	~/files/project/models/research/data$ for i in train/*; do  python3 xml_to_csv.py $i; done
+
+	~/files/project/models/research/data$ first=1; for i in train/*csv; do  if [[ $first == 1 ]]; then  cat $i; first=0; else grep -v "^filename" $i; fi; done > train_labels.csv 
+
+	~/files/project/models/research/data$ for i in test/*; do  python3 xml_to_csv.py $i; done
+  	~/files/project/models/research/data$ first=1; for i in test/*csv; do  if [[ $first == 1 ]]; then  cat $i; first=0; else grep -v "^filename" $i; fi; done > test_labels.csv
+
+
+Updated object-detection.pbtxt, and also modified generate_tfrecord.py (added the new labels)
+
+Generated tfrecords:
+	~/files/project/models/research/data$ python3 generate_tfrecord.py --csv_input=train_labels.csv --output_path=train.tfrecord
+	~/files/project/models/research/data$ python3 generate_tfrecord.py --csv_input=test_labels.csv --output_path=test.tfrecord
+
+
+Updated pipeline.config to have 9 classes
+
+
+Started training:
+
+	~/files/project/models/research$ python3 object_detection/model_main.py --alsologtostderr --pipeline_config_path=data/pipeline.config --model_dir=data/mario-model
+	
+	or ~/files/project/ai-player/train-model.sh
+
+
+
+2019-07-02:
+
+Training woefully slow on laptop (0.11 steps / second), but using GPUs at work, I get 3 steps/sec (Titan X 1050)
+
+2019-07-04:
+
+Copied data back home.
+
+Exported inference graph with:
+
+	~/files/project/models/research$ python3 object_detection/export_inference_graph.py  --pipeline_config_path=data/pipeline.config   --output_directory=/home/hbilar/files/project/ai-player/tensorflow/mario-model-frozen-2019-07-04 --trained_checkpoint_prefix=data/mario-model/model.ckpt-200000
+
+Pipeline config for frozen model:
+	~/files/project/ai-player/tensorflow/mario-model-frozen-2019-07-04/pipeline.config
+
+
+
+2019-07-08:
+
+RCNN model trained and exported
+
+	~/files/project/models/research$ python3 object_detection/export_inference_graph.py   --pipeline_config_path data/pipeline-rcnn.config  --output_directory /home/henrik/files/project/ai-player/tensorflow/mario-model-rcnn-2019-07-08  --trained_checkpoint_prefix data/mario-model-rcnn/model.ckpt-1212393 
+
+
+Pipeline config for frozen model:
+	/home/henrik/files/project/ai-player/tensorflow/mario-model-rcnn-2019-07-08/pipeline.config
