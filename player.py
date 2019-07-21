@@ -36,9 +36,8 @@ def setup_screen():
 
 def draw_nes_screen(screen, nes_screen):
     """ Draw the nes screen buffer to the screen """
-    pygame.surfarray.blit_array(screen, nes_screen)
 
-#    pygame.transform.scale2x(screen)
+    pygame.surfarray.blit_array(screen, nes_screen)
 
 
 def connect_to_game_server(address, port):
@@ -400,6 +399,7 @@ def main_loop(screen, sock):
 
 
             draw_nes_screen(nes_surface, nes_screen_contents)
+            nes_surface = pygame.transform.flip(nes_surface, True, False)
             # draw the nes surface onto the actual screen
             ###new_surf = pygame.transform.scale(nes_surface, (256*3, 240*3))
 
@@ -448,9 +448,6 @@ def main_loop(screen, sock):
                 send_key_to_emulator(sock, key_state)
 
             # draw the nes surface onto the actual screen
-            #screen.blit(pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT)), (0, 0))
-
-
 #            nes_surface = pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT))
 
             # try to detect objects in nes_surface
@@ -463,11 +460,8 @@ def main_loop(screen, sock):
                     colour = (255, 0, 0)
                 pygame.draw.rect(nes_surface, colour, (b[0], b[1], b[2]-b[0], b[3]-b[1]), 3)
 
-            ###nes_surface = pygame.transform.scale2x(nes_surface)
+#            nes_surface = pygame.transform.flip(nes_surface, True, False)
             screen.blit(nes_surface, (0, 0))
-
-#            screen.blit(pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT)), (0, 0))
-
             pygame.display.flip()
 
 
