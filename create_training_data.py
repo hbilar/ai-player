@@ -73,7 +73,7 @@ def create_path_if_not_exist(path):
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def generate_label_file(screenshot_name, label, object_img, obj_x, obj_y):
+def generate_label_file(screenshot_name, label, object_img, obj_x, obj_y, scale):
     """ Generate the training annotation xml file.
         Yes, this function should use the xml libraries.
         FIXME: Use XML libraries instead.
@@ -95,8 +95,8 @@ def generate_label_file(screenshot_name, label, object_img, obj_x, obj_y):
                 <database>Unknown</database>
             </source>
             <size>
-                <width>256</width>
-                <height>240</height>
+                <width>{}</width>
+                <height>{}</height>
                 <depth>3</depth>
             </size>
             <segmented>0</segmented>
@@ -113,7 +113,9 @@ def generate_label_file(screenshot_name, label, object_img, obj_x, obj_y):
                 </bndbox>
             </object>
         </annotation>
-    """.format(label, basename, screenshot_name, label, obj_x, obj_y, obj_x + obj_size[0], obj_y + obj_size[1])
+    """.format(label, basename, screenshot_name, int(NES_WIDTH * scale), int(NES_HEIGHT * scale), 
+               label, int(obj_x * scale), int(obj_y * scale), int((obj_x + obj_size[0]) * scale), 
+               int((obj_y + obj_size[1]) * scale))
 
     with open(xml_filename, "w") as fn:
         fn.write(annotation_string)
@@ -124,7 +126,7 @@ def generate_label_file(screenshot_name, label, object_img, obj_x, obj_y):
 
 
 def generate_screenshot(screen, bg_surface, background_img, object_img, obj_x=None, obj_y=None,
-                        outdir=".", label="None"):
+                        outdir=".", label="None", scale=2.0):
     screen.blit(bg_surface, (0, 0))
     if background_img is not None:
         screen.blit(background_img, (0, 0))
@@ -150,10 +152,12 @@ def generate_screenshot(screen, bg_surface, background_img, object_img, obj_x=No
 
     print("Screenshot name = {}".format(screenshot_name))
     print("path = {}".format(path))
-    pygame.image.save(screen, "{}".format(screenshot_name))
+
+    (x_size, y_size) = screen.get_rect().size
+    pygame.image.save(pygame.transform.scale(screen, (int(x_size * scale), int(y_size * scale))), "{}".format(screenshot_name))
 
     # add the xml label file
-    generate_label_file(screenshot_name, label, object_img, obj_x, obj_y)
+    generate_label_file(screenshot_name, label, object_img, obj_x, obj_y, scale)
 
 
 @click.command()
@@ -166,8 +170,9 @@ def generate_screenshot(screen, bg_surface, background_img, object_img, obj_x=No
 @click.option('--outdir', help="Where to store the training data", default="training")
 @click.option('--label', help="Label for the images", default="None")
 @click.option('--sleeptime', help="delay between each image generation", default=None)
+@click.option('--scale', help="amount to scale the images by", default=2.0)
 def handle_cmdline(object, background_img, background_cols, object_loc, many, outdir,
-                   label, sleeptime):
+                   label, sleeptime, scale):
     """ A little utility program that lets you generate training data for the ai-player
         object detection.
 
@@ -198,7 +203,7 @@ def handle_cmdline(object, background_img, background_cols, object_loc, many, ou
         (obj_x, obj_y) = get_xy(object_loc, img_size)
 
         generate_screenshot(screen, bg_surface, bg_img, object_img, obj_x, obj_y, outdir,
-                            label)
+                            label, scale)
 
         if sleeptime is not None:
             time.sleep(float(sleeptime))
