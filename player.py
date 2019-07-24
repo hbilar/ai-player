@@ -26,7 +26,7 @@ screenshot_dir = "./screenshots"
 #tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-03-10/frozen_inference_graph.pb"
 tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-07-04/frozen_inference_graph.pb"
 #tensorflow_frozen_graph = "tensorflow/mario-model-rcnn-2019-07-08/frozen_inference_graph.pb"
-##tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_inference_graph.pb"
+tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_inference_graph.pb"
 
 
 def setup_screen():
@@ -353,20 +353,9 @@ def main_loop(screen, sock):
     """ Main game loop """
 
     # create a surface for the NES
-    ## HENRIK
-    ###nes_surface = pygame.Surface((NES_WIDTH, NES_HEIGHT))
     nes_surface = pygame.Surface((NES_HEIGHT, NES_WIDTH))
     nes_surface.convert()
-    nes_surface.fill((0, 0, 128))
-
-    ##nes_surface = pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT))
-
-    ## HENRIK
-    #nes_surface = pygame.transform.scale(nes_surface, (NES_WIDTH,  NES_HEIGHT))
-
-
-
-
+    nes_surface.fill((0, 0, 128)) # dark blue background
 
     # Load a frozen tensorflow graph
     object_detection_graph = load_tensorflow_graph(tensorflow_frozen_graph)
@@ -396,12 +385,8 @@ def main_loop(screen, sock):
         tf_session = tf.Session()
         while running:
             nes_screen_contents = get_nes_screen_binary(sock)
-
-
+            # make a surface out of the screen contents
             draw_nes_screen(nes_surface, nes_screen_contents)
-            nes_surface = pygame.transform.flip(nes_surface, True, False)
-            # draw the nes surface onto the actual screen
-            ###new_surf = pygame.transform.scale(nes_surface, (256*3, 240*3))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -447,8 +432,6 @@ def main_loop(screen, sock):
                 key_state = tmp_key_state
                 send_key_to_emulator(sock, key_state)
 
-            # draw the nes surface onto the actual screen
-#            nes_surface = pygame.transform.scale(nes_surface, (2 * NES_WIDTH, 2 * NES_HEIGHT))
 
             # try to detect objects in nes_surface
             obj_boxes = detect_objects_in_surface(nes_surface, object_detection_graph, image_tensor,
@@ -460,8 +443,14 @@ def main_loop(screen, sock):
                     colour = (255, 0, 0)
                 pygame.draw.rect(nes_surface, colour, (b[0], b[1], b[2]-b[0], b[3]-b[1]), 3)
 
-#            nes_surface = pygame.transform.flip(nes_surface, True, False)
-            screen.blit(nes_surface, (0, 0))
+            # Make the surface point the right way
+            nes_surface = pygame.transform.flip(nes_surface, True, False)
+
+            # Now, rotate it 90 degrees anti-clock-wise
+            rotated_surface = pygame.transform.rotate(nes_surface, 90)
+
+            # scale and blit to screen
+            screen.blit(pygame.transform.scale(rotated_surface, (2*NES_WIDTH, 2*NES_HEIGHT)), (0, 0))
             pygame.display.flip()
 
 
