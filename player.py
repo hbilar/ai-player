@@ -1,6 +1,7 @@
 
 # Play the nes game
 import asyncio
+import json
 import pprint
 import pygame
 import random
@@ -21,12 +22,101 @@ NES_HEIGHT = 240
 
 screen_size = [3 * NES_WIDTH, 3 * NES_HEIGHT ]
 
+
 screenshot_dir = "./screenshots"
 
 #tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-03-10/frozen_inference_graph.pb"
 tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-07-04/frozen_inference_graph.pb"
 #tensorflow_frozen_graph = "tensorflow/mario-model-rcnn-2019-07-08/frozen_inference_graph.pb"
 tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_inference_graph.pb"
+
+
+# pixels for various words
+black_text_words = [
+    { 'label': 'world',
+                 'x1': 88,
+                 'y1': 80,
+                 'x2': 126,
+                 'y2': 86,
+                 'pix': [[[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [252, 252, 252]],
+                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                         [[252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252]],
+                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]] ]
+    },
+
+    { 'label': 'game',
+      'x1': 88,
+      'y1': 128,
+      'x2': 118,
+      'y2': 134,
+      'pix': [[[0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0], [0, 0, 0]]]
+      }
+
+
+    ]
 
 
 def setup_screen():
@@ -105,17 +195,11 @@ def get_nes_screen_binary(sock):
     # extra data back (I blame the \n characters..), so we make sure that
     # the array is the right size as well (otherwise reshape etc fails)
     pixels_np = np.array(pixels, dtype=np.uint8)
-    ## HENRIK maybe unneccessary
-    ###pixels_np = pixels_np[ : NES_WIDTH * NES_HEIGHT * 3]
 
     # Our array needs to be reshaped and then transposed, because otherwise
     # we end up with each line offset (256-240) pixels, and also drawn 90 degrees
     # rotated anti clock wise :(
-    ###screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1)).transpose((1,0,2))
-
-    ## HENRIK
-
-    screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1)).transpose((1, 0, 2))
+#    screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1)).transpose((1, 0, 2))
     screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1))
     print("PIXELS: {}, screen = {}".format(pixels_np.shape, screen.shape))
 
@@ -349,6 +433,45 @@ def setup_tf_detection_vars(graph):
         return (image_tensor, tensor_dict)
 
 
+def is_black_screen(surface):
+    """ Check to see if the display is mainly black. Checks a small number of pixels to
+        see if any of them are non-black """
+
+    sample_locs = [[255, 100], [100, 100], [0, 239]]
+
+    pix_arr = pygame.surfarray.pixels3d(surface)
+
+    for p in sample_locs:
+        pix = pix_arr[p[0], p[1]]
+        pv = pix[0] + pix[1] + pix[2]
+
+        if pv > 0:
+            return False
+
+    return True
+
+
+def check_black_screen_text(surface):
+    """ Check to see if the display is black, and if so if any text is displayed """
+
+    if is_black_screen(surface):
+
+        pix_arr = pygame.surfarray.pixels3d(surface)
+
+        for btw in black_text_words:
+
+            sub_pixels = pix_arr[btw['x1']:btw['x2'], btw['y1']:btw['y2']].tolist()
+
+            if sub_pixels == btw['pix']:
+                print("MATCHES {}".format(btw['label']))
+
+        is_game_over = True
+    else:
+        is_game_over = False
+
+    return is_game_over
+
+
 def main_loop(screen, sock):
     """ Main game loop """
 
@@ -381,10 +504,24 @@ def main_loop(screen, sock):
     key_state = 0
 
 
+
+    get_new_screen_contents = True
+    old_screen_contents = None
+
+    # Indicator dot
+    dot_x_y = [0, 0]
+
     with object_detection_graph.as_default():
         tf_session = tf.Session()
         while running:
-            nes_screen_contents = get_nes_screen_binary(sock)
+
+            if get_new_screen_contents:
+                nes_screen_contents = get_nes_screen_binary(sock)
+                old_screen_contents = nes_screen_contents
+            else:
+                nes_screen_contents = old_screen_contents
+
+
             # make a surface out of the screen contents
             draw_nes_screen(nes_surface, nes_screen_contents)
 
@@ -411,6 +548,18 @@ def main_loop(screen, sock):
                         key_states['start'] = event.type == pygame.KEYDOWN
                     if event.key == pygame.K_q:   # Use q for select (because space for screen shot)
                         key_states['select'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_h:
+                        key_states['h'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_j:
+                        key_states['j'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_k:
+                        key_states['k'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_l:
+                        key_states['l'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_y:
+                        key_states['y'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_u:
+                        key_states['u'] = event.type == pygame.KEYDOWN
 
                 # Reset NES
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -443,16 +592,58 @@ def main_loop(screen, sock):
                     colour = (255, 0, 0)
                 pygame.draw.rect(nes_surface, colour, (b[0], b[1], b[2]-b[0], b[3]-b[1]), 3)
 
-            # Make the surface point the right way
+            # Make the surface point the right way - note if we do this before passing it into the
+            # object detection, we get terrible detection accuracy.
             nes_surface = pygame.transform.flip(nes_surface, True, False)
 
             # Now, rotate it 90 degrees anti-clock-wise
             rotated_surface = pygame.transform.rotate(nes_surface, 90)
 
+            # Move indicator dot
+            if key_states.get('h', False):
+                new_x = dot_x_y[0] - 1 if dot_x_y[0] > 0 else 0
+                dot_x_y = [new_x, dot_x_y[1]]
+            elif key_states.get('l', False):
+                new_x = dot_x_y[0] + 1 if dot_x_y[0] < 255 else 255
+                dot_x_y = [new_x, dot_x_y[1]]
+            elif key_states.get('j', False):
+                new_y = dot_x_y[1] + 1 if dot_x_y[1] < 240 else 240
+                dot_x_y = [dot_x_y[0], new_y]
+            elif key_states.get('k', False):
+                new_y = dot_x_y[1] - 1 if dot_x_y[1] > 0 else 0
+                dot_x_y = [dot_x_y[0], new_y]
+
+            # Draw indicator dot
+            pix_arr = pygame.surfarray.pixels3d(rotated_surface)
+            pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
+            print("marker dot = {}".format(dot_x_y))
+
+
+            # Dump subsection of screen as json
+            if key_states.get('u', False):
+                print("Dumping section of screen")
+
+                sub_pixels = pix_arr[88:118, 128:134].tolist()
+
+#                print("SUB_PIXELS = {}".format(pprint.pformat(sub_pixels)))
+
+                print(json.dumps(sub_pixels))
+                time.sleep(5)
+
+
+            # Stop doing screen updates on 'y'
+            if key_states.get('y', False):
+                print("Toggling screen updates")
+                get_new_screen_contents = False if get_new_screen_contents is True else True
+
+
+            # Check for game over screens etc
+            if check_black_screen_text(rotated_surface):
+                print("IS GAME OVER SCREEN")
+
             # scale and blit to screen
             screen.blit(pygame.transform.scale(rotated_surface, (2*NES_WIDTH, 2*NES_HEIGHT)), (0, 0))
             pygame.display.flip()
-
 
 
 if __name__ == "__main__":
