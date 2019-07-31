@@ -34,48 +34,48 @@ tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_infer
 # pixels for various words
 black_text_words = [
     { 'label': 'world',
-                 'x1': 88,
-                 'y1': 80,
-                 'x2': 126,
-                 'y2': 86,
-                 'pix': [[[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [252, 252, 252]],
-                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                         [[252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252]],
-                         [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]] ]
+      'x1': 88,
+      'y1': 80,
+      'x2': 126,
+      'y2': 86,
+      'pix': [[[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [252, 252, 252]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+              [[252, 252, 252], [252, 252, 252], [0, 0, 0], [0, 0, 0], [0, 0, 0], [252, 252, 252]],
+              [[0, 0, 0], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]] ]
     },
 
     { 'label': 'game',
@@ -114,9 +114,80 @@ black_text_words = [
               [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0], [0, 0, 0]],
               [[252, 252, 252], [0, 0, 0], [0, 0, 0], [252, 252, 252], [0, 0, 0], [0, 0, 0]]]
       }
-
-
     ]
+
+# marker dot = 222, 30
+number_pixels = {
+    '0': [[None, None, [252, 252, 252], [252, 252, 252], [252, 252, 252], None],
+          [None, [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], None, None, None, None, [252, 252, 252]],
+          [[252, 252, 252], None, None, None, None, None],
+          [[252, 252, 252], [252, 252, 252], None, None, None, None],
+          [None, [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]]],
+
+    '1': [[None, None, None, None, None, None],
+          [None, None, None, None, None, None],
+          [None, [252, 252, 252], None, None, None, None],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [None, None, None, None, None, None]],
+
+    '2': [[None, [252, 252, 252], None, None, None, [252, 252, 252]],
+          [[252, 252, 252], [252, 252, 252], None, None, [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], None, None, [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], None, None, [252, 252, 252], [252, 252, 252], None],
+          [[252, 252, 252], None, [252, 252, 252], [252, 252, 252], [252, 252, 252], None],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], None, None]],
+
+    '3': [[None, None, None, None, None, [252, 252, 252]],
+          [[252, 252, 252], None, None, None, None, [252, 252, 252]],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, [252, 252, 252], [252, 252, 252], None, None],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], None, None],
+          [[252, 252, 252], [252, 252, 252], None, [252, 252, 252], [252, 252, 252], [252, 252, 252]]],
+
+    '4': [[None, None, None, [252, 252, 252], [252, 252, 252], None],
+          [None, None, [252, 252, 252], [252, 252, 252], [252, 252, 252], None],
+          [None, [252, 252, 252], [252, 252, 252], None, [252, 252, 252], None],
+          [[252, 252, 252], [252, 252, 252], None, None, [252, 252, 252], None],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]]],
+
+    '5': [[None, [252, 252, 252], [252, 252, 252], None, None, [252, 252, 252]],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], None, None, [252, 252, 252]],
+          [[252, 252, 252], None, [252, 252, 252], None, None, None],
+          [[252, 252, 252], None, [252, 252, 252], None, None, None],
+          [[252, 252, 252], None, [252, 252, 252], None, None, None],
+          [[252, 252, 252], None, [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]]],
+
+    '6': [[None, None, [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [None, [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], [252, 252, 252], None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], [252, 252, 252], [252, 252, 252]]],
+
+    '7': [[None, [252, 252, 252], None, None, None, None],
+          [[252, 252, 252], [252, 252, 252], None, None, None, None],
+          [[252, 252, 252], None, None, None, [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], None, None, [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], None, [252, 252, 252], [252, 252, 252], None, None],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], None, None, None]],
+
+    '8': [[None, [252, 252, 252], [252, 252, 252], None, [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]]],
+
+    '9': [[None, [252, 252, 252], [252, 252, 252], None, None, None],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], None, None],
+          [[252, 252, 252], None, None, [252, 252, 252], None, [252, 252, 252]],
+          [[252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]]],
+    }
 
 
 def setup_screen():
@@ -199,9 +270,7 @@ def get_nes_screen_binary(sock):
     # Our array needs to be reshaped and then transposed, because otherwise
     # we end up with each line offset (256-240) pixels, and also drawn 90 degrees
     # rotated anti clock wise :(
-#    screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1)).transpose((1, 0, 2))
     screen = pixels_np.reshape((NES_HEIGHT, NES_WIDTH, -1))
-    print("PIXELS: {}, screen = {}".format(pixels_np.shape, screen.shape))
 
     return screen
 
@@ -472,6 +541,61 @@ def check_black_screen_text(surface):
     return is_game_over
 
 
+def check_number(pix_arr, loc):
+    """ Check to see if a number exists in loc in the pixel array.
+    Returns: number, or None """
+
+    for n_id in number_pixels:
+        n = number_pixels[n_id]
+
+        n_width = len(n[0])
+        n_height = len(n)
+
+        sub_pixels = pix_arr[loc[0]:loc[0] + n_width, loc[1]:loc[1] + n_height].tolist()
+
+        # Check if the sub_pixels match the pattern in the number_pixels arrays
+        match = True
+        for r_id in range(0, n_height):
+            for c_id in range(0, n_width):
+                if number_pixels[n_id][r_id][c_id] is None:
+                    # Don't compare Nones
+                    continue
+
+                elif number_pixels[n_id][r_id][c_id] == sub_pixels[r_id][c_id]:
+                    continue
+
+                else:
+                    # No match - break out
+                    match = False
+                    break
+        if match:
+            return int(n_id)
+
+    # Nothing found...
+    return None
+
+
+def get_time_remaining(surface):
+    """ Check to see if any numbers are present in the time section of the screen """
+
+    # These are the pixel locations where the time numbers start
+    sample_locs = [[208, 24], [216, 24], [224, 24]]
+
+    pix_arr = pygame.surfarray.pixels3d(surface)
+    numbers_found = ''
+
+    for loc in sample_locs:
+        n = check_number(pix_arr, loc)
+        if n is not None:
+            numbers_found += str(n)
+
+    if numbers_found:
+        print("Numbers found returning: {}".format(numbers_found))
+        return int(numbers_found)
+    else:
+        return None
+
+
 def main_loop(screen, sock):
     """ Main game loop """
 
@@ -503,13 +627,13 @@ def main_loop(screen, sock):
                    'select': False }
     key_state = 0
 
-
-
     get_new_screen_contents = True
     old_screen_contents = None
 
     # Indicator dot
     dot_x_y = [0, 0]
+    mark_p1 = [0, 0]
+    mark_p2 = [0, 0]
 
     with object_detection_graph.as_default():
         tf_session = tf.Session()
@@ -520,7 +644,6 @@ def main_loop(screen, sock):
                 old_screen_contents = nes_screen_contents
             else:
                 nes_screen_contents = old_screen_contents
-
 
             # make a surface out of the screen contents
             draw_nes_screen(nes_surface, nes_screen_contents)
@@ -560,6 +683,10 @@ def main_loop(screen, sock):
                         key_states['y'] = event.type == pygame.KEYDOWN
                     if event.key == pygame.K_u:
                         key_states['u'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_i:
+                        key_states['i'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_o:
+                        key_states['o'] = event.type == pygame.KEYDOWN
 
                 # Reset NES
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -582,11 +709,10 @@ def main_loop(screen, sock):
                 send_key_to_emulator(sock, key_state)
 
 
-            # try to detect objects in nes_surface
+            # try to detect objects in nes_surface and draw bounding boxes
             obj_boxes = detect_objects_in_surface(nes_surface, object_detection_graph, image_tensor,
                                                   tensor_dict, tf_session)
             for b in obj_boxes:
-
                 colour = (0, 255, 0)
                 if b[4] == 1:
                     colour = (255, 0, 0)
@@ -598,6 +724,8 @@ def main_loop(screen, sock):
 
             # Now, rotate it 90 degrees anti-clock-wise
             rotated_surface = pygame.transform.rotate(nes_surface, 90)
+            # Reference to the pixel array
+            pix_arr = pygame.surfarray.pixels3d(rotated_surface)
 
             # Move indicator dot
             if key_states.get('h', False):
@@ -613,33 +741,47 @@ def main_loop(screen, sock):
                 new_y = dot_x_y[1] - 1 if dot_x_y[1] > 0 else 0
                 dot_x_y = [dot_x_y[0], new_y]
 
-            # Draw indicator dot
-            pix_arr = pygame.surfarray.pixels3d(rotated_surface)
-            pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
-            print("marker dot = {}".format(dot_x_y))
-
-
-            # Dump subsection of screen as json
-            if key_states.get('u', False):
-                print("Dumping section of screen")
-
-                sub_pixels = pix_arr[88:118, 128:134].tolist()
-
-#                print("SUB_PIXELS = {}".format(pprint.pformat(sub_pixels)))
-
-                print(json.dumps(sub_pixels))
-                time.sleep(5)
-
-
             # Stop doing screen updates on 'y'
             if key_states.get('y', False):
                 print("Toggling screen updates")
                 get_new_screen_contents = False if get_new_screen_contents is True else True
 
+            # Record mark on i
+            if key_states.get('i', False):
+                mark_p1 = [dot_x_y[0], dot_x_y[1]]
+                print("MARK 1: {}".format(mark_p1))
+            # Record mark on o
+            if key_states.get('o', False):
+                mark_p2 = [dot_x_y[0], dot_x_y[1]]
+                print("MARK 2: {}".format(mark_p2))
+
+            # Dump subsection of screen as json on u
+            if key_states.get('u', False):
+                print("Dumping section of screen")
+
+                sub_pixels = pix_arr[mark_p1[0]:mark_p2[0],
+                             mark_p1[1]:mark_p2[1]].tolist()
+                print(json.dumps(sub_pixels))
+
+                with open('dumpfile.txt', 'a+') as fd:
+                    fd.write("{}\n\n".format(json.dumps(sub_pixels)))
+                time.sleep(1)
 
             # Check for game over screens etc
             if check_black_screen_text(rotated_surface):
-                print("IS GAME OVER SCREEN")
+                print("IS BLACK SCREEN")
+
+            # Check how many seconds are left on the clock
+            seconds_left = get_time_remaining(rotated_surface)
+
+            if seconds_left is not None:
+                print("Seconds left: {}".format(seconds_left))
+
+            # Draw indicator dots
+            pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
+            pix_arr[mark_p1[0], mark_p1[1]] = [ 0, 255, 255]
+            pix_arr[mark_p2[0], mark_p2[1]] = [ 255, 255, 0]
+            print("marker dot = {}".format(dot_x_y))
 
             # scale and blit to screen
             screen.blit(pygame.transform.scale(rotated_surface, (2*NES_WIDTH, 2*NES_HEIGHT)), (0, 0))
