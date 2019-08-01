@@ -1,6 +1,7 @@
 
 # Play the nes game
 import asyncio
+from enum import Enum
 import json
 import pprint
 import pygame
@@ -23,6 +24,13 @@ NES_HEIGHT = 240
 screen_size = [3 * NES_WIDTH, 3 * NES_HEIGHT ]
 
 
+class BlackScreen(Enum):
+    NotBlack = 0
+    JustBlack = 1
+    World = 2
+    GameOver = 3
+
+
 screenshot_dir = "./screenshots"
 
 #tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-03-10/frozen_inference_graph.pb"
@@ -34,6 +42,7 @@ tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_infer
 # pixels for various words
 black_text_words = [
     { 'label': 'world',
+      'id' : BlackScreen.World,
       'x1': 88,
       'y1': 80,
       'x2': 126,
@@ -79,6 +88,7 @@ black_text_words = [
     },
 
     { 'label': 'game',
+      'id' : BlackScreen.GameOver,
       'x1': 88,
       'y1': 128,
       'x2': 118,
@@ -431,12 +441,9 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_sess
 
     return_list = []
 
-
-    ### TRY RESIZING TO 300 PIXELS
     # get the pygame surface as a 3d (r,g,b) array
     new_surf = pygame.transform.scale(surface, (256*3, 240*3))
     image = pygame.surfarray.array3d(new_surf)
-#    image = pygame.surfarray.array3d(surface)
 
     output_dict = tf_session.run(tensor_dict, feed_dict={image_tensor: np.expand_dims(image, 0)})
 
@@ -449,7 +456,6 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_sess
     if 'detection_masks' in output_dict:
         output_dict['detection_masks'] = output_dict['detection_masks'][0]
 
-    #print("")
     #print("Num detections: {}".format(output_dict['num_detections']))
     for i in range(0, output_dict['num_detections']):
         obj_id = int(output_dict['detection_classes'][i])
@@ -460,7 +466,7 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_sess
 
         score = output_dict['detection_scores'][i]
 
-        print("ID: {},  SCORE: {},  BOX:  {} x {}  to  {} x {}".format(obj_id, score, x, y, x2, y2))
+#        print("ID: {},  SCORE: {},  BOX:  {} x {}  to  {} x {}".format(obj_id, score, x, y, x2, y2))
 
         return_list.append([y, x, y2, x2, obj_id, score])
 
@@ -523,26 +529,27 @@ def is_black_screen(surface):
 def check_black_screen_text(surface):
     """ Check to see if the display is black, and if so if any text is displayed """
 
+    rv = BlackScreen.NotBlack
+
     if is_black_screen(surface):
+        rv = BlackScreen.JustBlack  # Default if the screen is black
 
         pix_arr = pygame.surfarray.pixels3d(surface)
 
+        # Check to see if any of the black text words matxh in our expected positions
         for btw in black_text_words:
-
             sub_pixels = pix_arr[btw['x1']:btw['x2'], btw['y1']:btw['y2']].tolist()
 
             if sub_pixels == btw['pix']:
-                print("MATCHES {}".format(btw['label']))
+                rv = btw['id']
+                break
 
-        is_game_over = True
-    else:
-        is_game_over = False
-
-    return is_game_over
+    return rv
 
 
 def check_number(pix_arr, loc):
     """ Check to see if a number exists in loc in the pixel array.
+        Note, this will not work close to the left or bottom screen edge!
     Returns: number, or None """
 
     for n_id in number_pixels:
@@ -590,10 +597,92 @@ def get_time_remaining(surface):
             numbers_found += str(n)
 
     if numbers_found:
-        print("Numbers found returning: {}".format(numbers_found))
         return int(numbers_found)
     else:
         return None
+
+
+def detect_holes(surface):
+    """ Detect 'holes' that Mario can fall in to (and die).
+        Returns list of pairs of holes, where the first element is the beginning
+        of the hole in the X axis, and the second value is the the end of the hole
+        in the X axis (all in pixels) """
+    holes = []
+    pix_arr = pygame.surfarray.pixels3d(surface)
+
+    # We only care about the bottom row, and we calculate everything that is blue on
+    # the lowest line as a hole.
+
+    lowest_line = pix_arr[:,NES_HEIGHT-1]
+
+    # The colour of 'holes'
+    hole_col = np.array([104, 136, 252], dtype=np.uint8)
+
+    # little state machine for picking out the holes
+    in_hole = list(lowest_line[0]) == list(hole_col)
+    hole_start = 0
+    # iterate across all pixels
+    for p_idx in range(0, len(lowest_line)):
+        p = lowest_line[p_idx]
+        if in_hole and list(p) != list(hole_col):
+            # transition to out of hole
+            holes.append([hole_start, p_idx - 1])
+            in_hole = False
+        elif (not in_hole) and list(p) == list(hole_col):
+            # new hole detected
+            hole_start = p_idx
+            in_hole = True
+
+    if in_hole:
+        # If we end with a hole, we capture the end of the last hole here
+        holes.append([hole_start, NES_WIDTH - 1])
+
+    return holes
+
+
+def check_screen_scroll(surface, moves_to_right, leftmost_pixels):
+    """ Check lower portion of leftmost column of pixels. If there is 
+        any change to the previously seen values, assume we've moved 
+        the screen, and in that case return an increased moves_to_right
+        counter. """
+
+    pix_arr = pygame.surfarray.pixels3d(surface)
+
+    # If leftmost_pixels is None, this is the first time we are called.
+    if leftmost_pixels is None:
+        leftmost_pixels = pix_arr[0, :].copy()
+
+        return (0, leftmost_pixels)
+
+    else:
+        new_pixels = pix_arr[0, :].copy()
+
+        for p_idx in range(0, len(new_pixels)):
+            if list(new_pixels[p_idx]) != list(leftmost_pixels[p_idx]):
+                # Not the same, so we must have moved
+                moves_to_right += 1
+                break
+        return (moves_to_right, new_pixels)
+
+
+def check_forward_obstacles(surface, mario_pos):
+    """ Check if there's a block in front of Mario (to the right only).
+        If yes, return the distance in pixels. If no, return NES_WIDTH """
+
+    pix_arr = pygame.surfarray.pixels3d(surface)
+
+    if mario_pos is None:
+        return NES_WIDTH
+
+    y_loc = mario_pos[2] - 10
+
+
+    pixel_row = pix_arr[y_loc, :]
+
+    for p in range(0, NES_WIDTH):
+        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
+
+#    print("pixel row (y_loc = {}): {}".format(y_loc, pixel_row))
 
 
 def main_loop(screen, sock):
@@ -615,7 +704,6 @@ def main_loop(screen, sock):
     clock = pygame.time.Clock()
     running = True
 
-
     # The possible joypad states
     key_states = { 'up': False,
                    'down': False,
@@ -635,7 +723,17 @@ def main_loop(screen, sock):
     mark_p1 = [0, 0]
     mark_p2 = [0, 0]
 
+
+    moves_to_right = 0  # Count how many times the leftmost column of pixels has changed
+                        # as a proxy for movement towards the right.
+
+
+
     with object_detection_graph.as_default():
+
+
+        leftmost_pixels = None
+
         tf_session = tf.Session()
         while running:
 
@@ -712,9 +810,15 @@ def main_loop(screen, sock):
             # try to detect objects in nes_surface and draw bounding boxes
             obj_boxes = detect_objects_in_surface(nes_surface, object_detection_graph, image_tensor,
                                                   tensor_dict, tf_session)
+
+            detected_objects = {}
             for b in obj_boxes:
+                # Make a dict up with the detected objects
                 colour = (0, 255, 0)
                 if b[4] == 1:
+                    # Mario - only one hopefully
+                    detected_objects['mario'] = [{ 'pos': [b[0], b[1], b[2], b[3]],
+                                                 'score': b[5]}]
                     colour = (255, 0, 0)
                 pygame.draw.rect(nes_surface, colour, (b[0], b[1], b[2]-b[0], b[3]-b[1]), 3)
 
@@ -767,21 +871,45 @@ def main_loop(screen, sock):
                     fd.write("{}\n\n".format(json.dumps(sub_pixels)))
                 time.sleep(1)
 
+
+            #########################################################
+            # Figure out actual game state (apart from obj detection)
+            #########################################################
+
+
+            # Check if the screen has moved right
+            (moves_to_right, leftmost_pixels) = check_screen_scroll(rotated_surface, moves_to_right,
+                                                                    leftmost_pixels)
+
             # Check for game over screens etc
-            if check_black_screen_text(rotated_surface):
-                print("IS BLACK SCREEN")
+            black_screen_state = check_black_screen_text(rotated_surface)
 
             # Check how many seconds are left on the clock
             seconds_left = get_time_remaining(rotated_surface)
 
             if seconds_left is not None:
-                print("Seconds left: {}".format(seconds_left))
+                print("Sec: {},    moves: {}".format(seconds_left, moves_to_right))
+
+
+            # Find all holes
+            holes = detect_holes(rotated_surface)
+
+#            print("Holes: {}".format(holes))
+
+
+            # Check to see if there are any blocks in front
+            mario_list = detected_objects.get('mario', [])
+            mario_pos = None
+            if len(mario_list) > 0:
+                mario_pos = mario_list[0]['pos']
+
+            forward_obstacle = check_forward_obstacles(rotated_surface, mario_pos)
 
             # Draw indicator dots
             pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
             pix_arr[mark_p1[0], mark_p1[1]] = [ 0, 255, 255]
             pix_arr[mark_p2[0], mark_p2[1]] = [ 255, 255, 0]
-            print("marker dot = {}".format(dot_x_y))
+#            print("marker dot = {}".format(dot_x_y))
 
             # scale and blit to screen
             screen.blit(pygame.transform.scale(rotated_surface, (2*NES_WIDTH, 2*NES_HEIGHT)), (0, 0))
