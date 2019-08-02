@@ -39,6 +39,11 @@ tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-07-04/frozen_infer
 tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_inference_graph.pb"
 
 
+# The brown block obstacles go from from block_col_1 to block_col_2
+obstacle_block_col_1 = [ 240, 208, 176 ]
+obstacle_block_col_2 = [ 228, 92, 16 ]
+obstacle_block_max_dist = 50   # How many pixels to check in front of mario
+
 # pixels for various words
 black_text_words = [
     { 'label': 'world',
@@ -674,15 +679,71 @@ def check_forward_obstacles(surface, mario_pos):
     if mario_pos is None:
         return NES_WIDTH
 
-    y_loc = mario_pos[2] - 10
+    y_loc = (mario_pos[2] - 10) % NES_HEIGHT
+    x_loc = (mario_pos[3] + 10) % NES_WIDTH
+
+#    print("forward_obstacle:   x_loc = {},   y_loc = {}".format(x_loc, y_loc))
+
+    # Check if we see the pattern block_col1, then block_col2, and if so assume we are in front of a block
+
+    in_front_of_block = False
+    for p in range(x_loc, (x_loc + obstacle_block_max_dist) % NES_WIDTH):
+#        print("  p = {}:   {}".format(p, pix_arr[p, y_loc]))
+        if list(pix_arr[p, y_loc]) == obstacle_block_col_1:
+            # Check 6 pixels ahead
+            next_loc = p + 6
+            if next_loc >= NES_WIDTH:
+                # Out of the screen
+                break
+
+            if list(pix_arr[next_loc, y_loc]) == obstacle_block_col_2:
+                # Found a block
+                return max(p - x_loc, 0)  # Delta distance between mario and beginning of block
+
+    return NES_WIDTH
+#    for p in range(0, NES_WIDTH):
+#        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
 
 
-    pixel_row = pix_arr[y_loc, :]
+def build_detected_objects_dict(surface, obj_boxes):
+    detected_objects = {'mario': [],
+                        'goomba': [],
+                        'koopa-troopa': [],
+                        'pipe': [],
+                        'flag': []
+                        }
+    for b in obj_boxes:
+        # Make a dict up with the detected objects
+        colour = (0, 255, 25 * b[4])
+        obj_id = None
 
-    for p in range(0, NES_WIDTH):
-        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
+        if b[4] == 1:
+            # Mario - only one hopefully
+            obj_id = 'mario'
+            colour = (255, 0, 0)
 
-#    print("pixel row (y_loc = {}): {}".format(y_loc, pixel_row))
+        elif b[4] == 2:
+            obj_id = 'goomba'
+        elif b[4] == 3:
+            obj_id = 'koopa-troopa'
+        elif b[4] == 4:
+            obj_id = 'flag'
+
+        if obj_id:
+            detected_objects[obj_id].append({'pos': [b[0], b[1], b[2], b[3]],
+                                             'score': b[5]})
+            pygame.draw.rect(surface, colour, (b[0], b[1], b[2] - b[0], b[3] - b[1]), 3)
+        else:
+            pygame.draw.rect(surface, (0, 0, 255), (b[0], b[1], b[2] - b[0], b[3] - b[1]), 3)
+
+    return detected_objects
+
+
+def get_mid_of_box(pos):
+    """ Calculate the middle of a position box """
+
+    return [(pos[2] - pos[0]) / 2 + pos[0],
+            (pos[3] - pos[1]) / 2 + pos[1]]
 
 
 def main_loop(screen, sock):
@@ -733,6 +794,7 @@ def main_loop(screen, sock):
 
 
         leftmost_pixels = None
+        old_mario_pos = None
 
         tf_session = tf.Session()
         while running:
@@ -811,16 +873,9 @@ def main_loop(screen, sock):
             obj_boxes = detect_objects_in_surface(nes_surface, object_detection_graph, image_tensor,
                                                   tensor_dict, tf_session)
 
-            detected_objects = {}
-            for b in obj_boxes:
-                # Make a dict up with the detected objects
-                colour = (0, 255, 0)
-                if b[4] == 1:
-                    # Mario - only one hopefully
-                    detected_objects['mario'] = [{ 'pos': [b[0], b[1], b[2], b[3]],
-                                                 'score': b[5]}]
-                    colour = (255, 0, 0)
-                pygame.draw.rect(nes_surface, colour, (b[0], b[1], b[2]-b[0], b[3]-b[1]), 3)
+            # Categorize the detected objects
+            detected_objects = build_detected_objects_dict(nes_surface, obj_boxes)
+
 
             # Make the surface point the right way - note if we do this before passing it into the
             # object detection, we get terrible detection accuracy.
@@ -893,17 +948,45 @@ def main_loop(screen, sock):
 
             # Find all holes
             holes = detect_holes(rotated_surface)
+            #            print("Holes: {}".format(holes))
 
-#            print("Holes: {}".format(holes))
+            # Get current position of mario
+            mario_pos = None
+            if len(detected_objects['mario']) > 0:
+                mario_pos = detected_objects['mario'][0]['pos']
+                old_mario_pos = mario_pos
+            else:
+                # If we can't find mario, assume he's in the old pos
+                mario_pos = old_mario_pos
 
+            if not mario_pos:
+                # Can't find mario, and we've never seen him
+                mario_pos = [0, 0, 20, 20]   # dummy values
 
             # Check to see if there are any blocks in front
-            mario_list = detected_objects.get('mario', [])
-            mario_pos = None
-            if len(mario_list) > 0:
-                mario_pos = mario_list[0]['pos']
-
             forward_obstacle = check_forward_obstacles(rotated_surface, mario_pos)
+            #print("Forward obstacle = {}".format(forward_obstacle))
+
+            # Build relative distances to mario of the objects
+            mario_mid = get_mid_of_box(mario_pos)
+
+            # Add the non obj detection objects in to the list of detected objects
+            rel_holes = []
+            for hole in holes:
+                rel_holes.append([mario_mid[1] - hole[0], mario_mid[1] - hole[1]])
+            #print("Rel holes: {}".format(rel_holes))
+
+            # and now for the tensorflow detected objects
+            for obj_id in detected_objects:
+                for b in detected_objects[obj_id]:
+                    obj_mid = get_mid_of_box(b['pos'])
+
+                    # Rel pos:  negative when object is to the right of mario, and down
+                    rel_pos = [ mario_mid[1] - obj_mid[1], mario_mid[0] - obj_mid[0]]
+
+                    b['rel'] = rel_pos
+
+            print("State:   {}".format(detected_objects))
 
             # Draw indicator dots
             pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
