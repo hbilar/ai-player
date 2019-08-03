@@ -44,6 +44,22 @@ obstacle_block_col_1 = [ 240, 208, 176 ]
 obstacle_block_col_2 = [ 228, 92, 16 ]
 obstacle_block_max_dist = 50   # How many pixels to check in front of mario
 
+
+# Used by the find_horizontal_objs to differentiate objects.
+# colseq is basically the expected colour order of an object, e.g. a pipe
+# goes from black, to light green, to dark green, to light green etc.
+# Width is the width of the object
+dumb_detection = {'pipe': {
+                     'colseq' : [ [0, 0, 0], [184, 248, 24], [0, 168, 0], [184, 248, 24],
+                                  [0, 168, 0], [184,248,24], [0 ,168, 0], [184, 248, 24]],
+                     'width' : 29
+                  },
+                  'obstacle': {
+                     'colseq' : [ [240, 208, 176], [228, 92, 16], [0, 0, 0] ],
+                      'width': 14
+                  }
+                 }
+
 # pixels for various words
 black_text_words = [
     { 'label': 'world',
@@ -682,13 +698,13 @@ def check_forward_obstacles(surface, mario_pos):
     y_loc = (mario_pos[2] - 10) % NES_HEIGHT
     x_loc = (mario_pos[3] + 10) % NES_WIDTH
 
-#    print("forward_obstacle:   x_loc = {},   y_loc = {}".format(x_loc, y_loc))
+    #    print("forward_obstacle:   x_loc = {},   y_loc = {}".format(x_loc, y_loc))
 
     # Check if we see the pattern block_col1, then block_col2, and if so assume we are in front of a block
 
     in_front_of_block = False
     for p in range(x_loc, (x_loc + obstacle_block_max_dist) % NES_WIDTH):
-#        print("  p = {}:   {}".format(p, pix_arr[p, y_loc]))
+        #        print("  p = {}:   {}".format(p, pix_arr[p, y_loc]))
         if list(pix_arr[p, y_loc]) == obstacle_block_col_1:
             # Check 6 pixels ahead
             next_loc = p + 6
@@ -699,10 +715,88 @@ def check_forward_obstacles(surface, mario_pos):
             if list(pix_arr[next_loc, y_loc]) == obstacle_block_col_2:
                 # Found a block
                 return max(p - x_loc, 0)  # Delta distance between mario and beginning of block
-
     return NES_WIDTH
-#    for p in range(0, NES_WIDTH):
-#        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
+
+
+def find_horizontal_objs(surface, mario_pos, type_id):
+    """ See if there are defined objects in front or back of mario.
+        Returns list of:
+            { type_id : <type>,  pos_x: <int>,  pos_y: <int>, start: <int>, end: <int> } """
+
+    pix_arr = pygame.surfarray.pixels3d(surface)
+
+    if mario_pos is None:
+        return []
+
+    y_loc = (mario_pos[2] - 10) % NES_HEIGHT
+    x_loc = (mario_pos[3] + 10) % NES_WIDTH
+
+    pix_arr[x_loc, y_loc] = (255, 255, 255)
+
+    objs_detected = []
+#    for p in range(0, NES_WIDTH - 1):
+    pix_iterator = iter(range(0, NES_WIDTH -1))
+    for p in pix_iterator:
+
+        for type_id in dumb_detection.keys():
+
+            obj_detected = False
+
+            # Check if first colour matches, otherwise try next pix
+            if list(pix_arr[p, y_loc]) == dumb_detection[type_id]['colseq'][0]:
+
+                # Iterate from here, seeing if we can spot the second colour
+                cur_col = dumb_detection[type_id]['colseq'][0]
+
+                col_seq = dumb_detection[type_id]['colseq'].copy()
+                col_seq.pop(0) # Remove first colour
+
+                expected_next_colour = col_seq.pop(0)
+
+                for p_in_pipe in range(p + 1, min(p + 30, NES_WIDTH)):
+                    # colour of current pixel
+                    new_pix = pix_arr[p_in_pipe, y_loc]
+
+                    if list(new_pix) == cur_col:
+                        # Still same colour - skip
+                        continue
+
+                    if list(new_pix) == expected_next_colour:
+                        # Still in sequence, but new colour
+                        if len(col_seq) == 0:
+                            # We've run out of colours, this is a complete section
+                            print("Detected object at {}".format(p))
+                            obj_detected = True
+                            break
+                        else:
+                            cur_col = list(new_pix)
+                            expected_next_colour = col_seq.pop(0)
+                    else:
+                        # Other colour - not our object
+                        break
+
+            if obj_detected:
+                print("Object detected at {}".format(p))
+                objs_detected.append({'type_id': type_id, 'pos_x': p, 'pos_y': y_loc })
+
+                # Now, also skip width pixels
+                for _ in range(0, dumb_detection[type_id]['width']):
+                    next(pix_iterator, None)
+
+
+
+    for p in range(0, NES_WIDTH):
+        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
+
+    for od in objs_detected:
+        type_id = od['type_id']
+        end_x = min(od['pos_x'] + dumb_detection[type_id]['width'], NES_WIDTH)
+
+        od['start'] = od['pos_x']
+        od['end'] = end_x
+        ##pix_arr[end_x, y_loc] = (255, 255, 255)
+
+    return objs_detected
 
 
 def build_detected_objects_dict(surface, obj_boxes):
@@ -931,7 +1025,6 @@ def main_loop(screen, sock):
             # Figure out actual game state (apart from obj detection)
             #########################################################
 
-
             # Check if the screen has moved right
             (moves_to_right, leftmost_pixels) = check_screen_scroll(rotated_surface, moves_to_right,
                                                                     leftmost_pixels)
@@ -963,36 +1056,49 @@ def main_loop(screen, sock):
                 # Can't find mario, and we've never seen him
                 mario_pos = [0, 0, 20, 20]   # dummy values
 
-            # Check to see if there are any blocks in front
-            forward_obstacle = check_forward_obstacles(rotated_surface, mario_pos)
-            #print("Forward obstacle = {}".format(forward_obstacle))
+            # Check to see if there are any blocks/pipes etc in front
+            horizontal_objects = find_horizontal_objs(rotated_surface, mario_pos, 'pipe')
 
             # Build relative distances to mario of the objects
             mario_mid = get_mid_of_box(mario_pos)
-
-            # Add the non obj detection objects in to the list of detected objects
-            rel_holes = []
-            for hole in holes:
-                rel_holes.append([mario_mid[1] - hole[0], mario_mid[1] - hole[1]])
-            #print("Rel holes: {}".format(rel_holes))
 
             # and now for the tensorflow detected objects
             for obj_id in detected_objects:
                 for b in detected_objects[obj_id]:
                     obj_mid = get_mid_of_box(b['pos'])
 
+                    obj_width = b['pos'][2] - b['pos'][0]
+
                     # Rel pos:  negative when object is to the right of mario, and down
                     rel_pos = [ mario_mid[1] - obj_mid[1], mario_mid[0] - obj_mid[0]]
-
                     b['rel'] = rel_pos
+                    b['width'] = obj_width
 
-            print("State:   {}".format(detected_objects))
+            for obj in horizontal_objects:
+                type_id = obj['type_id']
+                if not detected_objects.get(type_id, None):
+                    detected_objects[type_id] = []
+
+                obj_width = obj['end'] - obj['start']
+                d = { 'rel': [ mario_mid[1] - obj['pos_x'] - obj_width/2, 0],
+                      'width': obj_width}
+                detected_objects[type_id].append(d)
+
+            for hole in holes:
+                if not detected_objects.get('hole', None):
+                    detected_objects['hole'] = []
+                width = hole[1] - hole[0]
+                d = {'rel': [mario_mid[1] - hole[0] + width / 2, 0],
+                     'width': hole[1] - hole[0]
+                      }
+                detected_objects['hole'].append(d)
+
+            print("Detected Objects:   {}".format(pprint.pformat(detected_objects)))
 
             # Draw indicator dots
             pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
             pix_arr[mark_p1[0], mark_p1[1]] = [ 0, 255, 255]
             pix_arr[mark_p2[0], mark_p2[1]] = [ 255, 255, 0]
-#            print("marker dot = {}".format(dot_x_y))
 
             # scale and blit to screen
             screen.blit(pygame.transform.scale(rotated_surface, (2*NES_WIDTH, 2*NES_HEIGHT)), (0, 0))
