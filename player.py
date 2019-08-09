@@ -2,6 +2,7 @@
 # Play the nes game
 import asyncio
 from enum import Enum
+import click
 import json
 import pprint
 import pygame
@@ -18,17 +19,31 @@ import datetime
 
 import tensorflow as tf
 
+import gameplay
+
+
 NES_WIDTH = 256
 NES_HEIGHT = 240
 
 screen_size = [3 * NES_WIDTH, 3 * NES_HEIGHT ]
 
 
+# neural net for the game play
+gameplay_nn = None
+
+# Class of enum to differentiate between the types of black screens we can see
+# e.g. start of game (displaying "world n-m", fully black, displaying game over etc)
 class BlackScreen(Enum):
     NotBlack = 0
     JustBlack = 1
     World = 2
     GameOver = 3
+
+
+# "Oneshot" play - exit after mario dies or completes the first level (second time the
+# game displays a "world" on a black background
+# FIXME: Should be a parameter
+oneshot_play = True
 
 
 screenshot_dir = "./screenshots"
@@ -147,7 +162,10 @@ black_text_words = [
       }
     ]
 
-# marker dot = 222, 30
+
+# These are pixel value maps for the various numbers displayed e.g. for the time
+# None = don't care about the actual pixel on screen for a particular position when
+# comparing patterns
 number_pixels = {
     '0': [[None, None, [252, 252, 252], [252, 252, 252], [252, 252, 252], None],
           [None, [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252], [252, 252, 252]],
@@ -228,7 +246,6 @@ def setup_screen():
 
 def draw_nes_screen(screen, nes_screen):
     """ Draw the nes screen buffer to the screen """
-
     pygame.surfarray.blit_array(screen, nes_screen)
 
 
@@ -242,7 +259,6 @@ def connect_to_game_server(address, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((address, port))
 
-#    sock.setblocking(False)
     return sock
 
 
@@ -394,14 +410,14 @@ def calculate_key_value(key_states):
     """ From the key_states dict, calculate what the status
         byte to send the emulator should be. """
 
-    j = 1 if key_states['a'] else 0
-    j = j | (2 if key_states['b'] else 0)
-    j = j | (4 if key_states['select'] else 0)
-    j = j | (8 if key_states['start'] else 0)
-    j = j | (16 if key_states['up'] else 0)
-    j = j | (32 if key_states['down'] else 0)
-    j = j | (64 if key_states['left'] else 0)
-    j = j | (128 if key_states['right'] else 0)
+    j = 1 if key_states.get('a') else 0
+    j = j | (2 if key_states.get('b') else 0)
+    j = j | (4 if key_states.get('select') else 0)
+    j = j | (8 if key_states.get('start') else 0)
+    j = j | (16 if key_states.get('up') else 0)
+    j = j | (32 if key_states.get('down') else 0)
+    j = j | (64 if key_states.get('left') else 0)
+    j = j | (128 if key_states.get('right') else 0)
 
     return j
 
@@ -718,7 +734,7 @@ def check_forward_obstacles(surface, mario_pos):
     return NES_WIDTH
 
 
-def find_horizontal_objs(surface, mario_pos, type_id):
+def find_horizontal_objs(surface, mario_pos):
     """ See if there are defined objects in front or back of mario.
         Returns list of:
             { type_id : <type>,  pos_x: <int>,  pos_y: <int>, start: <int>, end: <int> } """
@@ -765,7 +781,7 @@ def find_horizontal_objs(surface, mario_pos, type_id):
                         # Still in sequence, but new colour
                         if len(col_seq) == 0:
                             # We've run out of colours, this is a complete section
-                            print("Detected object at {}".format(p))
+                            ##print("Detected object at {}".format(p))
                             obj_detected = True
                             break
                         else:
@@ -776,7 +792,7 @@ def find_horizontal_objs(surface, mario_pos, type_id):
                         break
 
             if obj_detected:
-                print("Object detected at {}".format(p))
+                ###print("Object detected at {}".format(p))
                 objs_detected.append({'type_id': type_id, 'pos_x': p, 'pos_y': y_loc })
 
                 # Now, also skip width pixels
@@ -840,6 +856,25 @@ def get_mid_of_box(pos):
             (pos[3] - pos[1]) / 2 + pos[1]]
 
 
+def do_start_sequence(sock):
+    """ Perform the mario start sequence (press start, wait for a bit) """
+
+
+    print("Doing start sequence")
+
+    # Sleep 1 second
+    print("Sleeping one second")
+    time.sleep(1)
+
+    # Press start button
+    print("sending start")
+    send_key_to_emulator(sock, calculate_key_value({'start': True}))
+    time.sleep(1)
+
+    print("sending empty")
+    send_key_to_emulator(sock, calculate_key_value({}))
+
+
 def main_loop(screen, sock):
     """ Main game loop """
 
@@ -873,6 +908,9 @@ def main_loop(screen, sock):
     get_new_screen_contents = True
     old_screen_contents = None
 
+    # "game" time left
+    remaining_seconds = None
+
     # Indicator dot
     dot_x_y = [0, 0]
     mark_p1 = [0, 0]
@@ -883,9 +921,22 @@ def main_loop(screen, sock):
                         # as a proxy for movement towards the right.
 
 
+    # How many times has screen transitioned to BlackScreen.World
+    trans_to_blackscreen_world = 0
+    previous_blackscreen = None
+
+    # What action should Mario take next
+    next_action = None
+
+    # If true, we'll use the neural net inputs for game play
+    do_ai_play = False
+
+    if oneshot_play:
+        do_start_sequence(sock)
+        do_ai_play = True
+
 
     with object_detection_graph.as_default():
-
 
         leftmost_pixels = None
         old_mario_pos = None
@@ -941,17 +992,47 @@ def main_loop(screen, sock):
                         key_states['i'] = event.type == pygame.KEYDOWN
                     if event.key == pygame.K_o:
                         key_states['o'] = event.type == pygame.KEYDOWN
+                    if event.key == pygame.K_n:
+                        # Turn on ai play
+                        print("Turning on ai player")
+                        do_ai_play = True
 
-                # Reset NES
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    send_reset_to_emulator(sock)
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                    # Take screen shot
-                    take_screenshot(nes_surface, path=screenshot_dir)
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                    # kill remote emulator and ourselves
-                    send_poweroff_to_emulator(sock)
-                    running = False
+
+            # Translate the "next action" generated to a key state
+
+            if do_ai_play:
+                if next_action == 0:
+                    # Do nothing - unset all buttons
+                    key_states['up'] = False
+                    key_states['down'] = False
+                    key_states['left'] = False
+                    key_states['right'] = False
+                    key_states['a'] = False
+                else:
+                    # Note: next_action values are:
+                    #   0 = do nothing
+                    #   1 = left
+                    #   2 = right
+                    #   3 = left and jump
+                    #   4 = right and jump
+
+
+                    key_states['up'] = False
+                    key_states['down'] = False
+                    key_states['left'] = next_action in [1, 3]
+                    key_states['right'] = next_action in [2, 4]
+                    key_states['a'] = next_action == 3
+
+            # Reset NES
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                send_reset_to_emulator(sock)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                # Take screen shot
+                take_screenshot(nes_surface, path=screenshot_dir)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+                # kill remote emulator and ourselves
+                send_poweroff_to_emulator(sock)
+                running = False
 
 
             # calculate the key state value. If it's different to the previous
@@ -1029,15 +1110,37 @@ def main_loop(screen, sock):
             (moves_to_right, leftmost_pixels) = check_screen_scroll(rotated_surface, moves_to_right,
                                                                     leftmost_pixels)
 
-            # Check for game over screens etc
+            # Check for game over screens etc (i.e. screens that are mostly black)
             black_screen_state = check_black_screen_text(rotated_surface)
+            if black_screen_state != previous_blackscreen:
+                # Transition to a different type of screen
+                previous_blackscreen = black_screen_state
+                if black_screen_state == BlackScreen.World:
+                    # We count how many times we have seen the "World" screen.
+                    # When we first start playing, this counter is one at the time
+                    # we get to play. If Mario dies (or the level completes),
+                    # this counter will increment, and we bomb out with the
+                    # current reward.
+
+                    trans_to_blackscreen_world += 1
+
+                    if oneshot_play and trans_to_blackscreen_world >= 2:
+                        # This is the end of the game.
+                        print("Found black world screen for the second time. exiting.")
+                        send_poweroff_to_emulator(sock)
+                        running = False   # Causes game to quit.
+
 
             # Check how many seconds are left on the clock
             seconds_left = get_time_remaining(rotated_surface)
+            if seconds_left:
+                # Save this value, so that we can reference it when we
+                # quit (and report game stats)
+                remaining_seconds = seconds_left
 
-            if seconds_left is not None:
-                print("Sec: {},    moves: {}".format(seconds_left, moves_to_right))
-
+            #if seconds_left is not None:
+            print("Sec: {},    moves: {},   transitions = {}".format(seconds_left, moves_to_right,
+                                                                     trans_to_blackscreen_world))
 
             # Find all holes
             holes = detect_holes(rotated_surface)
@@ -1057,7 +1160,7 @@ def main_loop(screen, sock):
                 mario_pos = [0, 0, 20, 20]   # dummy values
 
             # Check to see if there are any blocks/pipes etc in front
-            horizontal_objects = find_horizontal_objs(rotated_surface, mario_pos, 'pipe')
+            horizontal_objects = find_horizontal_objs(rotated_surface, mario_pos)
 
             # Build relative distances to mario of the objects
             mario_mid = get_mid_of_box(mario_pos)
@@ -1074,6 +1177,15 @@ def main_loop(screen, sock):
                     b['rel'] = rel_pos
                     b['width'] = obj_width
 
+                    b['norm_width'] = b['width'] / NES_WIDTH
+
+                    # Only care about 100 pix to either side of mario
+                    rel_x_dist = min(max(b['rel'][0], -100), 100)
+                    rel_y_dist = min(max(b['rel'][1], -100), 100)
+
+                    b['norm_pos'] = [ rel_x_dist / 200 + 0.5,
+                                      rel_y_dist / 200 + 0.5 ]  # 2*100 steps in total, centered around 0.5
+
             for obj in horizontal_objects:
                 type_id = obj['type_id']
                 if not detected_objects.get(type_id, None):
@@ -1081,7 +1193,13 @@ def main_loop(screen, sock):
 
                 obj_width = obj['end'] - obj['start']
                 d = { 'rel': [ mario_mid[1] - obj['pos_x'] - obj_width/2, 0],
-                      'width': obj_width}
+                      'width': obj_width, 'norm_width': obj_width / NES_WIDTH
+                      }
+
+                # Only care about 100 pix to either side of mario
+                rel_dist =  min(max(d['rel'][0], -100), 100)
+                d['norm_pos'] = [ rel_dist/200 + 0.5, 0.5]  # 200 steps in total, centered around 0.5
+
                 detected_objects[type_id].append(d)
 
             for hole in holes:
@@ -1089,11 +1207,18 @@ def main_loop(screen, sock):
                     detected_objects['hole'] = []
                 width = hole[1] - hole[0]
                 d = {'rel': [mario_mid[1] - hole[0] + width / 2, 0],
-                     'width': hole[1] - hole[0]
+                     'width': hole[1] - hole[0],
+                     'norm_width': (hole[1] - hole[0]) / NES_WIDTH
                       }
+                rel_dist =  min(max(d['rel'][0], -NES_WIDTH), NES_WIDTH)
+                d['norm_pos'] = [ rel_dist/(2 * NES_WIDTH) + 0.5, 0]  # 200 steps in total, centered around 0.5
+
                 detected_objects['hole'].append(d)
 
-            print("Detected Objects:   {}".format(pprint.pformat(detected_objects)))
+            # Find the next action
+            next_action = gameplay.run_ann(detected_objects, gameplay_nn)
+            print("next_action = {}".format(next_action))
+
 
             # Draw indicator dots
             pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
@@ -1105,7 +1230,35 @@ def main_loop(screen, sock):
             pygame.display.flip()
 
 
+    # If we end up here, we have either chosen to quit, or we're in oneshot mode and
+    # Mario has died. Dump out the
+
+    print("\n\n")
+    print("Seconds left: {}".format(remaining_seconds))
+    print("Moves to the right: {}".format(moves_to_right))
+
+
 if __name__ == "__main__":
+
+
+    # Load the base neural net
+    my_net = gameplay.neural_net_base_def
+
+    # Parse some super simple command line args
+    oneshot_play = 'oneshot' in sys.argv   # Turn on ai player
+
+    if oneshot_play:
+        # Load the neural network definition if we're playing in oneshot mode
+        try:
+            neural_net_file = sys.argv[2]
+        except:
+            print("Need to pass the name of the neural net file as 2nd param")
+            sys.exit(1)
+        my_net = gameplay.load_net_from_file(sys.argv[2])
+
+    gameplay_nn = gameplay.build_neural_net(my_net)
+    pprint.pprint(gameplay_nn)
+
 
     screen = setup_screen()
 
@@ -1117,13 +1270,8 @@ if __name__ == "__main__":
             # try next port
             pass
 
-
     if sock is None:
         print("Did you forget to start the emulator?")
         sys.exit(0)
 
-    print("socket: {}".format(sock))
-
     main_loop(screen, sock)
-
-
