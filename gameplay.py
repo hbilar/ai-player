@@ -48,12 +48,14 @@ class Neuron:
 neural_net_base_def = {
   'inputs' : [],   # list of 10 values
 
+  'generation': 1, # How many generations has this network gone through from the base
+
   'layers': [
     { 'name': 'input',
       'activation': 'sigmoid',
       'num_neurons': 8,
 
-      # as many weights as there are inputs
+      # as many weights as there are inputs, per neuron
       'weights': [[0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 ],
                   [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 ],
                   [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 ],
@@ -64,7 +66,6 @@ neural_net_base_def = {
                   [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 ],
                   ],
       # as many biases as there are neurons
-      #'bias': [-0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8 ],
       'bias': [0, 0, 0, 0, 0, 0, 0, 0 ],
       'neurons': []
     },
@@ -120,7 +121,6 @@ def load_net_from_file(filename):
         Used to load custom neural networks """
 
     print("Loading neural net from {}".format(filename))
-    net = None
     with open(filename, "r") as fd:
         net = json.load(fd)
 

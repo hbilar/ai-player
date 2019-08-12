@@ -687,12 +687,12 @@ def check_screen_scroll(surface, moves_to_right, leftmost_pixels):
 
     # If leftmost_pixels is None, this is the first time we are called.
     if leftmost_pixels is None:
-        leftmost_pixels = pix_arr[0, :].copy()
+        leftmost_pixels = pix_arr[0, NES_HEIGHT-20:NES_HEIGHT].copy()
 
         return (0, leftmost_pixels)
 
     else:
-        new_pixels = pix_arr[0, :].copy()
+        new_pixels = pix_arr[0, NES_HEIGHT-20:NES_HEIGHT].copy()
 
         for p_idx in range(0, len(new_pixels)):
             if list(new_pixels[p_idx]) != list(leftmost_pixels[p_idx]):

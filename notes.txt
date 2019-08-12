@@ -161,3 +161,15 @@ RCNN model trained and exported
 
 Pipeline config for frozen model:
 	/home/henrik/files/project/ai-player/tensorflow/mario-model-rcnn-2019-07-08/pipeline.config
+
+
+2019-08-11:
+
+	Training mario neural nets.
+	
+	Bug in "move to the right" counting detector, which meant that if mario was running
+	into the left hand of the screen, it kept increasing the counter (becuse the left most
+	pixel column kept being modified). 
+
+	This resulted in all the Marios eventually just running into the left hand corner of the
+	as soon as the game started.
