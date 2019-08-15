@@ -65,8 +65,9 @@ obstacle_block_max_dist = 50   # How many pixels to check in front of mario
 # goes from black, to light green, to dark green, to light green etc.
 # Width is the width of the object
 dumb_detection = {'pipe': {
-                     'colseq' : [ [0, 0, 0], [184, 248, 24], [0, 168, 0], [184, 248, 24],
-                                  [0, 168, 0], [184,248,24], [0 ,168, 0], [184, 248, 24]],
+#                     'colseq' : [ [0, 0, 0], [184, 248, 24], [0, 168, 0], [184, 248, 24],
+                     'colseq': [[184, 248, 24], [0, 168, 0], [184, 248, 24],
+                                [0, 168, 0], [184,248,24], [0 ,168, 0], [184, 248, 24]],
                      'width' : 29
                   },
                   'obstacle': {
@@ -934,6 +935,7 @@ def main_loop(screen, sock):
     if oneshot_play:
         do_start_sequence(sock)
         do_ai_play = True
+        consecutive_jumps = 0   # How many iterations have we held down the jump key
 
 
     with object_detection_graph.as_default():
@@ -1016,12 +1018,20 @@ def main_loop(screen, sock):
                     #   3 = left and jump
                     #   4 = right and jump
 
-
                     key_states['up'] = False
                     key_states['down'] = False
                     key_states['left'] = next_action in [1, 3]
                     key_states['right'] = next_action in [2, 4]
-                    key_states['a'] = next_action == 3
+                    key_states['a'] = next_action in [3, 4]
+
+                    if key_states['a']:
+                        # Stop the model from holding down the jump key indefinitely
+                        consecutive_jumps += 1
+                        if consecutive_jumps > 10:
+                            consecutive_jumps = 0
+                            key_states['a'] = False
+                    else:
+                        consecutive_jumps = 0
 
             # Reset NES
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -1139,8 +1149,8 @@ def main_loop(screen, sock):
                 remaining_seconds = seconds_left
 
             #if seconds_left is not None:
-            print("Sec: {},    moves: {},   transitions = {}".format(seconds_left, moves_to_right,
-                                                                     trans_to_blackscreen_world))
+#            print("Sec: {},    moves: {},   transitions = {}".format(seconds_left, moves_to_right,
+#                                                                     trans_to_blackscreen_world))
 
             # Find all holes
             holes = detect_holes(rotated_surface)
@@ -1180,11 +1190,10 @@ def main_loop(screen, sock):
                     b['norm_width'] = b['width'] / NES_WIDTH
 
                     # Only care about 100 pix to either side of mario
-                    rel_x_dist = min(max(b['rel'][0], -100), 100)
-                    rel_y_dist = min(max(b['rel'][1], -100), 100)
+                    rel_x_dist = b['rel'][0] / NES_WIDTH + 0.5
+                    rel_y_dist = b['rel'][1] / NES_WIDTH + 0.5
 
-                    b['norm_pos'] = [ rel_x_dist / 200 + 0.5,
-                                      rel_y_dist / 200 + 0.5 ]  # 2*100 steps in total, centered around 0.5
+                    b['norm_pos'] = [ rel_x_dist, rel_y_dist ]
 
             for obj in horizontal_objects:
                 type_id = obj['type_id']
@@ -1217,7 +1226,7 @@ def main_loop(screen, sock):
 
             # Find the next action
             next_action = gameplay.run_ann(detected_objects, gameplay_nn)
-            print("next_action = {}".format(next_action))
+            #print("next_action = {}".format(next_action))
 
 
             # Draw indicator dots
