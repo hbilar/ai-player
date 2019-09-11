@@ -7,7 +7,6 @@ import json
 import player
 
 
-
 INFINITY_DIST=1
 
 # From https://towardsdatascience.com/machine-learning-for-beginners-an-introduction-to-neural-networks-d49f22d238f9
@@ -103,7 +102,6 @@ neural_net_base_def = {
 }
 
 
-
 def dump_net_to_file(net_def, filename):
     """ Write the neural net to filename (in JSON) """
 
@@ -179,7 +177,7 @@ def feed_forward_net(net_def, inputs):
 
         inp = outputs.copy()
 
-#    print("inp = {}".format(inp))
+    #print("outputs = {}".format(inp))
     # Index of largest value
     return np.argmax(inp)
 
@@ -198,16 +196,6 @@ def sorted_objects(detected_objects, keyname):
 def run_ann(detected_objects, nn):
     """ Produce an action for mario, given the state of the world in terms of
         detected objects """
-
-    goomba1 = None
-    goomba2 = None
-    koopa1 = None
-
-    object1 = None
-    pipe = None
-    hole = None
-
-    pipe = None
 
     inputs = []
 
@@ -267,12 +255,11 @@ def run_ann(detected_objects, nn):
         inputs.append(0)
 
 
-#    print("ANN: detected_objects: {}".format(pprint.pformat(detected_objects)))
-#    print("ANN:   inputs: {}".format(pprint.pformat(inputs)))
-
+    #print("ANN: detected_objects: {}".format(pprint.pformat(detected_objects)))
+    #print("ANN:   inputs: {}".format(pprint.pformat(inputs)))
 
     action = feed_forward_net(nn, inputs)
 
-#    print("ANN:   action: {}".format(action))
+    #print("ANN:   action: {}".format(action))
 
     return action

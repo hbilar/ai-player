@@ -15,4 +15,4 @@ pip3 install asyncio
 pip3 install pycocotools
 pip3 install object_detection
 
-sudo apt install protobuf-compiler
+#sudo apt install protobuf-compiler
