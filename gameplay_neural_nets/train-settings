@@ -1,0 +1,18 @@
+============================================
+Starting run at Sat  7 Sep 13:26:22 BST 2019
+Params:
+top_n_nets=1
+nets_per_base=10
+weight_jitter=0.01
+bias_jitter=0.01
+mutation_likelihood=0.4
+
+============================================
+Starting run at Wed 11 Sep 00:00:23 BST 2019
+Params:
+top_n_nets=1
+nets_per_base=10
+weight_jitter=0.01
+bias_jitter=0.01
+mutation_likelihood=0.4
+
