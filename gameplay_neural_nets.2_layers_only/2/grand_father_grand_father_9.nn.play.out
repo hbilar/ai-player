@@ -1,0 +1,78 @@
+pygame 1.9.6
+Hello from the pygame community. https://www.pygame.org/contribute.html
+Loading neural net from gameplay_neural_nets/2/grand_father_grand_father_9.nn
+net = {'generation': 1,
+ 'inputs': [],
+ 'layers': [{'activation': 'sigmoid',
+             'bias': [0, 0, 0, 0, 0, 0, 0, 0],
+             'name': 'input',
+             'neurons': [],
+             'num_neurons': 8,
+             'weights': [[0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]]},
+            {'activation': 'sigmoid',
+             'bias': [0, 0, 0, 0, 0.03],
+             'name': 'output',
+             'neurons': [],
+             'num_neurons': 5,
+             'weights': [[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.11, 0.11, 0.11, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]]}]}
+{'generation': 1,
+ 'inputs': [],
+ 'layers': [{'activation': 'sigmoid',
+             'bias': [0, 0, 0, 0, 0, 0, 0, 0],
+             'name': 'input',
+             'neurons': [<gameplay.Neuron object at 0x7feac79ae860>,
+                         <gameplay.Neuron object at 0x7feac79ae828>,
+                         <gameplay.Neuron object at 0x7feac79ae240>,
+                         <gameplay.Neuron object at 0x7feac79aeb00>,
+                         <gameplay.Neuron object at 0x7feac79aeba8>,
+                         <gameplay.Neuron object at 0x7feac79aeb38>,
+                         <gameplay.Neuron object at 0x7feac79aeda0>,
+                         <gameplay.Neuron object at 0x7feac79aec50>],
+             'num_neurons': 8,
+             'weights': [[0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.4, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]]},
+            {'activation': 'sigmoid',
+             'bias': [0, 0, 0, 0, 0.03],
+             'name': 'output',
+             'neurons': [<gameplay.Neuron object at 0x7feac79aecc0>,
+                         <gameplay.Neuron object at 0x7feac79aecf8>,
+                         <gameplay.Neuron object at 0x7feac79aee80>,
+                         <gameplay.Neuron object at 0x7feac79aed68>,
+                         <gameplay.Neuron object at 0x7feac79aee48>],
+             'num_neurons': 5,
+             'weights': [[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.11, 0.11, 0.11, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+                         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]]}]}
+load_tensorflow_graph: path = tensorflow/mario-model-simple-2019-07-17/frozen_inference_graph.pb
+object_detection_graph = <tensorflow.python.framework.ops.Graph object at 0x7feac79aedd8>
+Doing start sequence
+Sleeping one second
+sending start
+sending empty
+Found black world screen for the second time. exiting.
+
+
+
+Seconds left: 362
+Moves to the right: 89

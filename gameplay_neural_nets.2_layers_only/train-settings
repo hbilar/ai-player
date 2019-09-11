@@ -1,0 +1,45 @@
+============================================
+Starting run at Fri 16 Aug 23:32:31 BST 2019
+Params:
+top_n_nets=1
+nets_per_base=10
+weight_jitter=0.01
+bias_jitter=0.01
+mutation_likelihood=0.2
+
+============================================
+Starting run at Fri 16 Aug 23:44:57 BST 2019
+Params:
+top_n_nets=1
+nets_per_base=10
+weight_jitter=0.01
+bias_jitter=0.01
+mutation_likelihood=0.2
+
+============================================
+Starting run at Fri 16 Aug 23:47:07 BST 2019
+Params:
+top_n_nets=1
+nets_per_base=10
+weight_jitter=0.01
+bias_jitter=0.01
+mutation_likelihood=0.2
+
+============================================
+Starting run at Sat 17 Aug 16:19:50 BST 2019
+Params:
+top_n_nets=1
+nets_per_base=10
+weight_jitter=0.01
+bias_jitter=0.01
+mutation_likelihood=0.4
+
+============================================
+Starting run at Sat 17 Aug 16:28:37 BST 2019
+Params:
+top_n_nets=1
+nets_per_base=10
+weight_jitter=0.01
+bias_jitter=0.01
+mutation_likelihood=0.4
+
