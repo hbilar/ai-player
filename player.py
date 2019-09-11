@@ -383,7 +383,7 @@ def get_nes_screen(sock):
 
 
 def send_key_to_emulator(sock, key_state):
-    # type: (socket, dict) -> None
+    # type: (socket, int) -> None
     """ Send a new joypad state to the emulator """
 
     clear_socket(sock)
@@ -715,13 +715,9 @@ def check_forward_obstacles(surface, mario_pos):
     y_loc = (mario_pos[2] - 10) % NES_HEIGHT
     x_loc = (mario_pos[3] + 10) % NES_WIDTH
 
-    #    print("forward_obstacle:   x_loc = {},   y_loc = {}".format(x_loc, y_loc))
-
-    # Check if we see the pattern block_col1, then block_col2, and if so assume we are in front of a block
-
-    in_front_of_block = False
+    # Check if we see the pattern block_col1, then block_col2, and if so assume we are in
+    # front of a block
     for p in range(x_loc, (x_loc + obstacle_block_max_dist) % NES_WIDTH):
-        #        print("  p = {}:   {}".format(p, pix_arr[p, y_loc]))
         if list(pix_arr[p, y_loc]) == obstacle_block_col_1:
             # Check 6 pixels ahead
             next_loc = p + 6
@@ -748,7 +744,7 @@ def find_horizontal_objs(surface, mario_pos):
     y_loc = (mario_pos[2] - 10) % NES_HEIGHT
     x_loc = (mario_pos[3] + 10) % NES_WIDTH
 
-    pix_arr[x_loc, y_loc] = (255, 255, 255)
+#    pix_arr[x_loc, y_loc] = (255, 255, 255)
 
     objs_detected = []
 #    for p in range(0, NES_WIDTH - 1):
@@ -801,9 +797,8 @@ def find_horizontal_objs(surface, mario_pos):
                     next(pix_iterator, None)
 
 
-
-    for p in range(0, NES_WIDTH):
-        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
+#    for p in range(0, NES_WIDTH):
+#        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
 
     for od in objs_detected:
         type_id = od['type_id']
@@ -811,10 +806,49 @@ def find_horizontal_objs(surface, mario_pos):
 
         od['start'] = od['pos_x']
         od['end'] = end_x
-        ##pix_arr[end_x, y_loc] = (255, 255, 255)
-
     return objs_detected
 
+
+def filter_false_positives(surface, obj_boxes):
+    """ Try to filter out false positives. For example, the secret boxes with
+        question marks are often detected as koopa troopas (probably due to the
+        question mark looking a bit like a koopas neck)."""
+
+    # We're going to be studying individual pixels.
+    pix_arr = pygame.surfarray.pixels3d(surface)
+
+    # List to hold the objects we need to delete from the list of objs
+    # (i.e. false positives)
+    drop_idx = []
+
+    # analyse objects, and filter out problematic / incorrect ones.
+    # So far, only the question mark blocks seem to be mis-identified
+    # as koopa-troopas, so they get filtered out here.
+    for b_idx in range(0, len(obj_boxes)):
+        b = obj_boxes[b_idx]
+
+        if b[4] == 3:
+            # Potential koopa-troopa
+            is_koopa = False
+            for x in range(b[0], b[2]):
+                for y in range(b[1], b[3]):
+                    # Koopa Troopas are unique compared to the blocks, in having the
+                    # white colour 252, 252, 252
+                    if list(pix_arr[x, y]) == [252, 252, 252]:
+                        is_koopa = True
+                        break
+
+                if is_koopa:
+                    break
+
+            if not is_koopa:
+                drop_idx.append(b_idx)
+
+    # Finally, drop the detections that were determined to be false
+    for d in sorted(drop_idx, reverse=True):
+        del obj_boxes[d]
+
+    return obj_boxes
 
 def build_detected_objects_dict(surface, obj_boxes):
     detected_objects = {'mario': [],
@@ -859,8 +893,6 @@ def get_mid_of_box(pos):
 
 def do_start_sequence(sock):
     """ Perform the mario start sequence (press start, wait for a bit) """
-
-
     print("Doing start sequence")
 
     # Sleep 1 second
@@ -875,6 +907,72 @@ def do_start_sequence(sock):
     print("sending empty")
     send_key_to_emulator(sock, calculate_key_value({}))
 
+
+
+def handle_pygame_key_events(event, key_states):
+    """ Given a pygame event, and a key_states dict, modify key_states dict
+        and return the modified version """
+
+    if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+        if event.key == pygame.K_UP:
+            key_states['up'] = event.type == pygame.KEYDOWN
+        elif event.key == pygame.K_DOWN:
+            key_states['down'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_LEFT:
+            key_states['left'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_RIGHT:
+            key_states['right'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_a:
+            key_states['a'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_s:  # NOTE   s, not b
+            key_states['b'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_RETURN:
+            key_states['start'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_q:  # Use q for select (because space for screen shot)
+            key_states['select'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_h:
+            key_states['h'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_j:
+            key_states['j'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_k:
+            key_states['k'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_l:
+            key_states['l'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_y:
+            key_states['y'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_u:
+            key_states['u'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_i:
+            key_states['i'] = event.type == pygame.KEYDOWN
+        if event.key == pygame.K_o:
+            key_states['o'] = event.type == pygame.KEYDOWN
+
+    return key_states
+
+
+
+def obj_detection_boxes_normalise(detected_objects, mario_mid):
+
+    for obj_id in detected_objects:
+        for b in detected_objects[obj_id]:
+            obj_mid = get_mid_of_box(b['pos'])
+
+            obj_width = b['pos'][2] - b['pos'][0]
+
+            # Rel pos:  negative when object is to the right of mario, and down
+            rel_pos = [mario_mid[1] - obj_mid[1], mario_mid[0] - obj_mid[0]]
+            b['rel'] = rel_pos
+            b['width'] = obj_width
+
+            b['norm_width'] = b['width'] / NES_WIDTH
+
+            # Only care about 100 pix to either side of mario
+            rel_x_dist = b['rel'][0] / NES_WIDTH + 0.5
+            rel_y_dist = b['rel'][1] / NES_WIDTH + 0.5
+
+            b['norm_pos'] = [rel_x_dist, rel_y_dist]
+
+    return detected_objects
 
 def main_loop(screen, sock):
     """ Main game loop """
@@ -937,14 +1035,18 @@ def main_loop(screen, sock):
         do_ai_play = True
         consecutive_jumps = 0   # How many iterations have we held down the jump key
 
-
+    frame_counter = 0
+    time_start = time.time()
     with object_detection_graph.as_default():
 
         leftmost_pixels = None
         old_mario_pos = None
 
         tf_session = tf.Session()
+
         while running:
+
+            frame_counter += 1
 
             if get_new_screen_contents:
                 nes_screen_contents = get_nes_screen_binary(sock)
@@ -955,108 +1057,13 @@ def main_loop(screen, sock):
             # make a surface out of the screen contents
             draw_nes_screen(nes_surface, nes_screen_contents)
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    send_poweroff_to_emulator(sock)
-                    running = False
-
-                # joypad buttons
-                if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-                    if event.key == pygame.K_UP:
-                        key_states['up'] = event.type == pygame.KEYDOWN
-                    elif event.key == pygame.K_DOWN:
-                        key_states['down'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_LEFT:
-                        key_states['left'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_RIGHT:
-                        key_states['right'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_a:
-                        key_states['a'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_s:   # NOTE   s, not b
-                        key_states['b'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_RETURN:
-                        key_states['start'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_q:   # Use q for select (because space for screen shot)
-                        key_states['select'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_h:
-                        key_states['h'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_j:
-                        key_states['j'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_k:
-                        key_states['k'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_l:
-                        key_states['l'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_y:
-                        key_states['y'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_u:
-                        key_states['u'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_i:
-                        key_states['i'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_o:
-                        key_states['o'] = event.type == pygame.KEYDOWN
-                    if event.key == pygame.K_n:
-                        # Turn on ai play
-                        print("Turning on ai player")
-                        do_ai_play = True
-
-
-            # Translate the "next action" generated to a key state
-
-            if do_ai_play:
-                if next_action == 0:
-                    # Do nothing - unset all buttons
-                    key_states['up'] = False
-                    key_states['down'] = False
-                    key_states['left'] = False
-                    key_states['right'] = False
-                    key_states['a'] = False
-                else:
-                    # Note: next_action values are:
-                    #   0 = do nothing
-                    #   1 = left
-                    #   2 = right
-                    #   3 = left and jump
-                    #   4 = right and jump
-
-                    key_states['up'] = False
-                    key_states['down'] = False
-                    key_states['left'] = next_action in [1, 3]
-                    key_states['right'] = next_action in [2, 4]
-                    key_states['a'] = next_action in [3, 4]
-
-                    if key_states['a']:
-                        # Stop the model from holding down the jump key indefinitely
-                        consecutive_jumps += 1
-                        if consecutive_jumps > 10:
-                            consecutive_jumps = 0
-                            key_states['a'] = False
-                    else:
-                        consecutive_jumps = 0
-
-            # Reset NES
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                send_reset_to_emulator(sock)
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                # Take screen shot
-                take_screenshot(nes_surface, path=screenshot_dir)
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                # kill remote emulator and ourselves
-                send_poweroff_to_emulator(sock)
-                running = False
-
-
-            # calculate the key state value. If it's different to the previous
-            # value, update the emulator
-            tmp_key_state = calculate_key_value(key_states)
-            if tmp_key_state != key_state:
-                # update the emulator
-                key_state = tmp_key_state
-                send_key_to_emulator(sock, key_state)
-
-
             # try to detect objects in nes_surface and draw bounding boxes
             obj_boxes = detect_objects_in_surface(nes_surface, object_detection_graph, image_tensor,
                                                   tensor_dict, tf_session)
+
+            # Filter out false positives (e.g. question marks that are detecte as
+            # koopa troopas
+            obj_boxes = filter_false_positives(nes_surface, obj_boxes)
 
             # Categorize the detected objects
             detected_objects = build_detected_objects_dict(nes_surface, obj_boxes)
@@ -1148,13 +1155,12 @@ def main_loop(screen, sock):
                 # quit (and report game stats)
                 remaining_seconds = seconds_left
 
-            #if seconds_left is not None:
-#            print("Sec: {},    moves: {},   transitions = {}".format(seconds_left, moves_to_right,
+#            if seconds_left is not None:
+#                print("Sec: {},    moves: {},   transitions = {}".format(seconds_left, moves_to_right,
 #                                                                     trans_to_blackscreen_world))
 
             # Find all holes
             holes = detect_holes(rotated_surface)
-            #            print("Holes: {}".format(holes))
 
             # Get current position of mario
             mario_pos = None
@@ -1176,24 +1182,7 @@ def main_loop(screen, sock):
             mario_mid = get_mid_of_box(mario_pos)
 
             # and now for the tensorflow detected objects
-            for obj_id in detected_objects:
-                for b in detected_objects[obj_id]:
-                    obj_mid = get_mid_of_box(b['pos'])
-
-                    obj_width = b['pos'][2] - b['pos'][0]
-
-                    # Rel pos:  negative when object is to the right of mario, and down
-                    rel_pos = [ mario_mid[1] - obj_mid[1], mario_mid[0] - obj_mid[0]]
-                    b['rel'] = rel_pos
-                    b['width'] = obj_width
-
-                    b['norm_width'] = b['width'] / NES_WIDTH
-
-                    # Only care about 100 pix to either side of mario
-                    rel_x_dist = b['rel'][0] / NES_WIDTH + 0.5
-                    rel_y_dist = b['rel'][1] / NES_WIDTH + 0.5
-
-                    b['norm_pos'] = [ rel_x_dist, rel_y_dist ]
+            detected_objects = obj_detection_boxes_normalise(detected_objects, mario_mid)
 
             for obj in horizontal_objects:
                 type_id = obj['type_id']
@@ -1224,10 +1213,69 @@ def main_loop(screen, sock):
 
                 detected_objects['hole'].append(d)
 
-            # Find the next action
+            # determine the next action
             next_action = gameplay.run_ann(detected_objects, gameplay_nn)
-            #print("next_action = {}".format(next_action))
 
+            # Handle pygame events (button presses etc)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    send_poweroff_to_emulator(sock)
+                    running = False
+
+                # joypad buttons
+                key_states = handle_pygame_key_events(event, key_states)
+
+            # Translate the "next action" generated to a key state
+            if do_ai_play:
+                if next_action == 0:
+                    # Do nothing - unset all buttons
+                    key_states['up'] = False
+                    key_states['down'] = False
+                    key_states['left'] = False
+                    key_states['right'] = False
+                    key_states['a'] = False
+                else:
+                    # Note: next_action values are:
+                    #   0 = do nothing
+                    #   1 = left
+                    #   2 = right
+                    #   3 = left and jump
+                    #   4 = right and jump
+
+                    key_states['up'] = False
+                    key_states['down'] = False
+                    key_states['left'] = next_action in [1, 3]
+                    key_states['right'] = next_action in [2, 4]
+                    key_states['a'] = next_action in [3, 4]
+
+                    if key_states['a']:
+                        # Stop the model from holding down the jump key indefinitely
+                        consecutive_jumps += 1
+                        if consecutive_jumps > 3:
+                            consecutive_jumps = 0
+                            key_states['a'] = False
+                    else:
+                        consecutive_jumps = 0
+
+            # Reset NES
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                send_reset_to_emulator(sock)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                # Take screen shot
+                take_screenshot(nes_surface, path=screenshot_dir)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+                # kill remote emulator and ourselves
+                send_poweroff_to_emulator(sock)
+                running = False
+
+            # Now that we know our desired key state, calculate what value this
+            # corresponds to in the emulator (i.e. the bitmap).
+            # If it's different to the previous value, update the emulator
+            tmp_key_state = calculate_key_value(key_states)
+            if tmp_key_state != key_state:
+                # update the emulator
+                key_state = tmp_key_state
+                send_key_to_emulator(sock, key_state)
 
             # Draw indicator dots
             pix_arr[dot_x_y[0], dot_x_y[1]] = [ 0, 255, 0]
@@ -1242,10 +1290,15 @@ def main_loop(screen, sock):
     # If we end up here, we have either chosen to quit, or we're in oneshot mode and
     # Mario has died. Dump out the
 
+
+
+
     print("\n\n")
     print("Seconds left: {}".format(remaining_seconds))
     print("Moves to the right: {}".format(moves_to_right))
 
+    print("frame count: {}".format(frame_counter))
+    print("time start:  {},   time_now: {}".format(time_start, time.time()))
 
 if __name__ == "__main__":
 
