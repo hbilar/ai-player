@@ -16,17 +16,13 @@ import select
 import stat
 import os
 import datetime
-
 import tensorflow as tf
-
 import gameplay
-
 
 NES_WIDTH = 256
 NES_HEIGHT = 240
 
 screen_size = [3 * NES_WIDTH, 3 * NES_HEIGHT ]
-
 
 # neural net for the game play
 gameplay_nn = None
@@ -39,26 +35,19 @@ class BlackScreen(Enum):
     World = 2
     GameOver = 3
 
-
 # "Oneshot" play - exit after mario dies or completes the first level (second time the
 # game displays a "world" on a black background
 # FIXME: Should be a parameter
 oneshot_play = True
 
-
 screenshot_dir = "./screenshots"
 
-#tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-03-10/frozen_inference_graph.pb"
-tensorflow_frozen_graph = "tensorflow/mario-model-frozen-2019-07-04/frozen_inference_graph.pb"
-#tensorflow_frozen_graph = "tensorflow/mario-model-rcnn-2019-07-08/frozen_inference_graph.pb"
 tensorflow_frozen_graph = "tensorflow/mario-model-simple-2019-07-17/frozen_inference_graph.pb"
-
 
 # The brown block obstacles go from from block_col_1 to block_col_2
 obstacle_block_col_1 = [ 240, 208, 176 ]
 obstacle_block_col_2 = [ 228, 92, 16 ]
 obstacle_block_max_dist = 50   # How many pixels to check in front of mario
-
 
 # Used by the find_horizontal_objs to differentiate objects.
 # colseq is basically the expected colour order of an object, e.g. a pipe
@@ -504,8 +493,6 @@ def detect_objects_in_surface(surface, graph, image_tensor, tensor_dict, tf_sess
 
         score = output_dict['detection_scores'][i]
 
-#        print("ID: {},  SCORE: {},  BOX:  {} x {}  to  {} x {}".format(obj_id, score, x, y, x2, y2))
-
         return_list.append([y, x, y2, x2, obj_id, score])
 
     return return_list
@@ -744,10 +731,7 @@ def find_horizontal_objs(surface, mario_pos):
     y_loc = (mario_pos[2] - 10) % NES_HEIGHT
     x_loc = (mario_pos[3] + 10) % NES_WIDTH
 
-#    pix_arr[x_loc, y_loc] = (255, 255, 255)
-
     objs_detected = []
-#    for p in range(0, NES_WIDTH - 1):
     pix_iterator = iter(range(0, NES_WIDTH -1))
     for p in pix_iterator:
 
@@ -795,10 +779,6 @@ def find_horizontal_objs(surface, mario_pos):
                 # Now, also skip width pixels
                 for _ in range(0, dumb_detection[type_id]['width']):
                     next(pix_iterator, None)
-
-
-#    for p in range(0, NES_WIDTH):
-#        pix_arr[p, y_loc] = np.array([0, 255, 0], dtype=np.uint8)
 
     for od in objs_detected:
         type_id = od['type_id']
@@ -1155,10 +1135,6 @@ def main_loop(screen, sock):
                 # quit (and report game stats)
                 remaining_seconds = seconds_left
 
-#            if seconds_left is not None:
-#                print("Sec: {},    moves: {},   transitions = {}".format(seconds_left, moves_to_right,
-#                                                                     trans_to_blackscreen_world))
-
             # Find all holes
             holes = detect_holes(rotated_surface)
 
@@ -1286,13 +1262,8 @@ def main_loop(screen, sock):
             screen.blit(pygame.transform.scale(rotated_surface, (2*NES_WIDTH, 2*NES_HEIGHT)), (0, 0))
             pygame.display.flip()
 
-
     # If we end up here, we have either chosen to quit, or we're in oneshot mode and
     # Mario has died. Dump out the
-
-
-
-
     print("\n\n")
     print("Seconds left: {}".format(remaining_seconds))
     print("Moves to the right: {}".format(moves_to_right))
@@ -1301,8 +1272,6 @@ def main_loop(screen, sock):
     print("time start:  {},   time_now: {}".format(time_start, time.time()))
 
 if __name__ == "__main__":
-
-
     # Load the base neural net
     my_net = gameplay.neural_net_base_def
 
@@ -1320,7 +1289,6 @@ if __name__ == "__main__":
 
     gameplay_nn = gameplay.build_neural_net(my_net)
     pprint.pprint(gameplay_nn)
-
 
     screen = setup_screen()
 
