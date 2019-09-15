@@ -146,9 +146,6 @@ def build_neural_net(net_def):
 def process_layer(layer_def, inputs):
     """ Using the input, activate the layer, and return list of results """
 
-#    print("process_layer:  inputs = {}".format(inputs))
-#    print("layer_def = {}".format(layer_def))
-
     outputs = []
     for n in layer_def['neurons']:
         n_res = n.activate(inputs)
@@ -164,20 +161,13 @@ def feed_forward_net(net_def, inputs):
         E.g. if output for the last layer is [ 0.3, 0.1, 0.8, 0.3 ], the function returns 2.
     """
 
-#    print("\n")
-#    print("feed forward net: inputs = {}".format(inputs))
-
-
     inp = inputs.copy()
-
     for n in range(0, len(net_def['layers'])):
 
         outputs = process_layer(net_def['layers'][n], inp)
-#        print("feed_forward_net:  inputs = {}, outputs = {}".format(inp, outputs))
 
         inp = outputs.copy()
 
-    #print("outputs = {}".format(inp))
     # Index of largest value
     return np.argmax(inp)
 
@@ -254,12 +244,6 @@ def run_ann(detected_objects, nn):
         inputs.append(INFINITY_DIST)
         inputs.append(0)
 
-
-    #print("ANN: detected_objects: {}".format(pprint.pformat(detected_objects)))
-    #print("ANN:   inputs: {}".format(pprint.pformat(inputs)))
-
     action = feed_forward_net(nn, inputs)
-
-    #print("ANN:   action: {}".format(action))
 
     return action
